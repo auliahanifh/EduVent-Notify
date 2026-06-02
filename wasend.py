@@ -1,16 +1,18 @@
+import os
 import requests
 import time
 from datetime import datetime
 from urllib.parse import quote
 
-NOTION_TOKEN = "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"
+NOTION_TOKEN = os.getenv("NOTION_TOKEN")
 DB_TUGAS = "31c87d969b0a80e09112dab127df9869"
 DB_STUDENT = "35787d969b0a801fbde8f08af80bb608"
 DB_PENGUMPULAN = "35987d969b0a80b19b19fc9192bcde0e"
+WA_TOKEN = os.getenv("WA_TOKEN")
 
 WA_URL = "https://api.fonnte.com/send"
 WA_HEADERS = {
-    "Authorization": "XT6yPeUYoshTNjo85bgd", 
+    "Authorization": WA_TOKEN, 
 }
 
 NOTION_HEADERS = {

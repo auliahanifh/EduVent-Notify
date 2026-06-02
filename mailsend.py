@@ -1,13 +1,14 @@
+import os
 import smtplib
 import requests
 from email.message import EmailMessage
 from datetime import datetime
 
-NOTION_TOKEN = "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"
+NOTION_TOKEN = os.getenv("NOTION_TOKEN")
 DB_TUGAS = "31c87d969b0a80e09112dab127df9869"
 DB_STUDENT = "35787d969b0a801fbde8f08af80bb608"
-EMAIL_PENGIRIM = "namedauliah@gmail.com"
-PASSWORD_PENGIRIM = "tayenwpkajajpgcn" 
+EMAIL = "namedauliah@gmail.com"
+PASSWORD = os.getenv("EMAIL_PASS")
 
 NOTION_HEADERS = {
     "Authorization": f"Bearer {NOTION_TOKEN}",
@@ -64,7 +65,7 @@ END:VCALENDAR"""
 
     try:
         with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
-            smtp.login(EMAIL_PENGIRIM, PASSWORD_PENGIRIM)
+            smtp.login(EMAIL, PASSWORD)
             
             msg = EmailMessage()
             msg['Subject'] = f'Tugas Terbaru: {matkul} - {nama_tugas}'
