@@ -69,7 +69,7 @@ END:VCALENDAR"""
             
             msg = EmailMessage()
             msg['Subject'] = f'Tugas Terbaru: {matkul} - {nama_tugas}'
-            msg['From'] = EMAIL_PENGIRIM
+            msg['From'] = EMAIL
             msg['To'] = email_tujuan
             
             body_html = f"""
@@ -88,7 +88,6 @@ END:VCALENDAR"""
             msg.set_content("Aktifkan HTML untuk melihat pesan ini.")
             msg.add_alternative(body_html, subtype='html')
 
-            # Menambahkan lampiran file .ics
             msg.add_attachment(
                 ics_content.encode('utf-8'),
                 maintype='text',
