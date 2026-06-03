@@ -56,10 +56,10 @@ def kirim_email_kalender(email_tujuan, nama, nama_tugas, matkul, submit, url_tug
 VERSION:2.0
 CALSCALE:GREGORIAN
 BEGIN:VEVENT
-SUMMARY:[{matkul}] Tugas: {nama_tugas}
+SUMMARY:[{matkul}] {nama_tugas}
 DTSTART;VALUE=DATE:{dt_start}
 DTEND;VALUE=DATE:{dt_start}
-DESCRIPTION:Silakan kumpulkan tugas {nama_tugas} pada hari ini.\\n\\nLink Tugas: {url_tugas}
+DESCRIPTION:Kumpulkan tugas [{matkul}] Tugas: {nama_tugas} hari ini! \\n\\n Cek tugas: {url_tugas}
 END:VEVENT
 END:VCALENDAR"""
 
@@ -76,10 +76,10 @@ END:VCALENDAR"""
             <html>
             <body>
                 <p> Halo, {nama}!</p>
-                <p>Cek tugas terbaru dari mata kuliah <b>{matkul}</b>, yang baru diunggah di EduVent!
+                <p>Cek tugas terbaru dari mata kuliah <b>{matkul}</b> telah diunggah di EduVent!</p>
                 <p>🔗 <a href="{url_tugas}" target="_blank"><b>Buka tugasmu!</b></a></p>
-                <br>Batas Pengumpulan: {submit}</br>
-                <p>📅 <b><i>Klik attachment file deadline.ics untuk menambahkan reminder waktu pengumpulan tugas ke kalendermu!</i></b></p>
+                <p>Batas Pengumpulan: <b>{submit}</b></p>
+                <p>📅 <b><i>Klik attachment file deadline.ics di bawah ini untuk menambahkan reminder waktu pengumpulan tugas ke kalendermu!</i></b></p>
                 </p>
             </body>
             </html>
@@ -112,7 +112,7 @@ if __name__ == "__main__":
     elif not data_tugas:
         print("Tidak ada tugas di dalam database.")
     else:
-        print(f"Terdapat {len(data_tugas)} tugas,yang belum dikirim ke email")
+        print(f"Terdapat {len(data_tugas)} tugas belum dikirim melalui email")
         
         for tugas in data_tugas:
             t_props = tugas["properties"]
