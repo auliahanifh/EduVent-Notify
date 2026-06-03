@@ -65,7 +65,7 @@ def hitung_semester_mahasiswa(entry_year):
     return semester
 
 if __name__ == "__main__":
-    print("Menarik data sinkronisasi Notion...")
+    print("Memeriksa tugas yang akan dikirim...")
     data_mhs = get_notion_data(DB_STUDENT)
     data_tugas = get_notion_data(DB_TUGAS)
     data_pengumpulan = get_notion_data(DB_PENGUMPULAN) 
@@ -81,7 +81,7 @@ if __name__ == "__main__":
             matkul = t_props["Matakuliah"]["select"]["name"]
             submit_str = t_props["Submit"]["date"]["start"] if t_props["Submit"].get("date") else None
             is_new = not t_props["Send by WhatsApp"]["checkbox"]
-            url_tugas = tugas.get("url", "#")
+            url_tugas = tugas.get("url", "#").replace("www.notion.so", "app.notion.com/p")
             semester_tugas = int(t_props["Semester"]["select"]["name"])
             
             if not submit_str: continue
@@ -127,11 +127,11 @@ if __name__ == "__main__":
             if is_new:
                 cal_link = generate_cal_link(nama_tugas, matkul, submit_str, url_tugas)
                 pesan = (
-                    f"Halo *{nama}*, tugas baru saja diunggah di EduVent!\n\n"
+                    f"Halo *{nama}*, kerjakan tugas baru yang telah diunggah di EduVent!\n\n"
                     f"📚 Mata Kuliah: {matkul}\n"
-                    f"📅 Deadline: {submit_str}\n\n"
-                    f"🔗 Tugas: {url_tugas}\n"
-                    f"Cek email untuk menambahkan reminder waktu pengumpulan tugas ke kalendermu!\n"
+                    f"📅 Deadline: {submit_str}\n"
+                    f"🔗 Tugas: {url_tugas}\n\n"
+                    f"Cek email untuk mengaktifkan reminder waktu pengumpulan tugas ke kalendermu!\n"
                 )
                 berhasil = kirim_wa(nomor_wa, pesan)
                 dikirim = True

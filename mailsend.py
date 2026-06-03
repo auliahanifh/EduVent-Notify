@@ -76,10 +76,10 @@ END:VCALENDAR"""
             <html>
             <body>
                 <p> Halo, {nama}!</p>
-                <p>Tugas terbaru pada mata kuliah <b>{matkul}</b>, baru saja diunggah di EduVent!
-                    <br>Batas Pengumpulan: {submit}</br>
-                <br>🔗 <a href="{url_tugas}" target="_blank"><b>Buka tugasmu!</b></a></br>
-                <br>📅 <i>Klik attachment file deadline.ics untuk menambahkan reminder waktu pengumpulan tugas ke kalendermu!</i></br>
+                <p>Cek tugas terbaru dari mata kuliah <b>{matkul}</b>, yang baru diunggah di EduVent!
+                <p>🔗 <a href="{url_tugas}" target="_blank"><b>Buka tugasmu!</b></a></p>
+                <br>Batas Pengumpulan: {submit}</br>
+                <p>📅 <b><i>Klik attachment file deadline.ics untuk menambahkan reminder waktu pengumpulan tugas ke kalendermu!</i></b></p>
                 </p>
             </body>
             </html>
@@ -103,7 +103,7 @@ END:VCALENDAR"""
         return False
 
 if __name__ == "__main__":
-    print("Memeriksa tugas untuk dikirim ke email...")
+    print("Memeriksa tugas yang akan dikirim...")
     data_mhs = get_notion_data(DB_STUDENT)
     data_tugas = get_notion_data(DB_TUGAS)
 
