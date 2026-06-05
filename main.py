@@ -9,6 +9,6 @@ while True:
     os.system("python mailsend.py")
     os.system("python wasend.py")
     
-    print("Tunggu satu hari sebelum pengecekan berikutnya...\n")
+    print("Tunggu 5 menit sebelum pengecekan berikutnya...\n")
     
-    time.sleep(86400)
+    time.sleep(300)
