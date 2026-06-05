@@ -41,7 +41,7 @@ def kirim_wa(nomor, pesan):
     time.sleep(2) 
     return res.status_code == 200
 
-def generate_cal_link(nama_tugas, matkul, submit_str, url_tugas):
+def generate_cal_link(nama_tugas, matkul, submit, url_tugas):
     return ""
 
 def hitung_semester_mahasiswa(entry_year):
@@ -83,11 +83,15 @@ if __name__ == "__main__":
             submit = t_props["Submit"]["date"]["start"] if t_props["Submit"].get("date") else None
             url_tugas = tugas.get("url", "#").replace("www.notion.so", "app.notion.com/p")
             smt_tugas = int(t_props["Semester"]["select"]["name"])
+
+            cb_info = t_props.get("info_whatsapp", {}).get("checkbox", False)
+            cb_remind = t_props.get("remind_due", {}).get("checkbox", False)
+            cb_overdue= t_props.get("remind_overdue", {}).get("checkbox", False)
             
             if not submit: continue
-            submit_date = datetime.strptime(submit_str, "%Y-%m-%d").date()
+            submit_date = datetime.strptime(submit, "%Y-%m-%d").date()
             selisih_hari = (submit_date - today).days
-        except Exception:
+        except Exception as e:
             continue
 
         new_notify = not cb_info
@@ -117,7 +121,7 @@ if __name__ == "__main__":
 
             semester_mahasiswa = hitung_semester_mahasiswa(entry_year)
             
-            if semester_tugas != semester_mahasiswa:
+            if smt_tugas != semester_mahasiswa:
                 continue
 
             sudah_kumpul = False
@@ -134,11 +138,11 @@ if __name__ == "__main__":
             dikirim = False
 
             if new_notify:
-                cal_link = generate_cal_link(nama_tugas, matkul, submit_str, url_tugas)
+                cal_link = generate_cal_link(nama_tugas, matkul, submit, url_tugas)
                 pesan = (
                     f"Halo *{nama}*, kerjakan tugas baru yang telah diunggah di EduVent!\n\n"
                     f"📚 Mata Kuliah: {matkul}\n"
-                    f"📅 Deadline: {submit_str}\n"
+                    f"📅 Deadline: {submit}\n"
                     f"🔗 Tugas: {url_tugas}\n\n"
                     f"Cek email untuk mengaktifkan reminder waktu pengumpulan tugas ke kalendermu!\n"
                 )
