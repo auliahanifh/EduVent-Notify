@@ -145,7 +145,7 @@ if __name__ == "__main__":
                     dikirim = True
                 else:
                     pesan = (
-                        f"⚠️ Halo *{nama}*, kamu *belum mengumpulkan tugas pada mata kuliah {matkul}*! Segera selesaikan pada tautan berikut dan *kumpulkan paling lambat besok*!\n"
+                        f"⚠️ Halo *{nama}*, kamu *belum mengumpulkan tugas* pada *mata kuliah {matkul}*! Segera selesaikan pada tautan berikut dan *kumpulkan paling lambat besok*!\n"
                         f"🔗 Cek Tugas: {url_tugas}\n")
                     berhasil = kirim_wa(nomor_wa, pesan)
                     dikirim = True

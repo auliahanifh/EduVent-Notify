@@ -79,7 +79,7 @@ END:VCALENDAR"""
                 <p>Cek tugas terbaru dari mata kuliah <b>{matkul}</b> telah diunggah di EduVent!</p>
                 <p>🔗 <a href="{url_tugas}" target="_blank"><b>Buka tugasmu!</b></a></p>
                 <p>Batas Pengumpulan: <b>{submit}</b></p>
-                <p>📅 <b><i>Klik attachment file deadline.ics di bawah ini untuk menambahkan reminder waktu pengumpulan tugas ke kalendermu!</i></b></p>
+                <p>📅 <b><i>Klik attachment file deadline.ics di bawah ini untuk menambahkan reminder waktu pengumpulan tugas {matkul} ke kalendermu!</i></b></p>
                 </p>
             </body>
             </html>
@@ -126,7 +126,7 @@ if __name__ == "__main__":
                 nama_tugas = t_props["Quest"]["title"][0]["text"]["content"] if t_props.get("Quest", {}).get("title") else "Tanpa Nama"
                 matkul = t_props["Matakuliah"]["select"]["name"] if t_props.get("Matakuliah", {}).get("select") else "Mata Kuliah Umum"
                 submit_str = t_props["Submit"]["date"]["start"] if t_props.get("Submit", {}).get("date") else None
-                url_tugas = tugas.get("url", "#")
+                url_tugas = tugas.get("url", "#").replace("www.notion.so", "app.notion.com/p")
                 semester_tugas = int(t_props["Semester"]["select"]["name"])
                 
                 if not submit_str:
