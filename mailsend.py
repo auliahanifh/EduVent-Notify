@@ -23,9 +23,9 @@ def get_notion_data(db_id):
     return res.json().get("results", [])
 
 def tandai_email_terkirim(page_id):
-    """Menandai checkbox 'Send by email' menjadi True di Notion."""
+    """Tandai pemberitahuan tugas terkirim melalui email"""
     url = f"https://api.notion.com/v1/pages/{page_id}"
-    payload = {"properties": {"Send by email": {"checkbox": True}}}
+    payload = {"properties": {"info_email": {"checkbox": True}}}
     requests.patch(url, json=payload, headers=NOTION_HEADERS)
 
 def hitung_semester_mahasiswa(entry_year):
@@ -49,7 +49,7 @@ def hitung_semester_mahasiswa(entry_year):
     return semester
 
 def kirim_email_kalender(email_tujuan, nama, nama_tugas, matkul, submit, url_tugas):
-    """Mengirim email beserta file .ics kalender untuk reminder."""
+    """Mengirim email pemberitahuan tugas"""
     dt_start = submit.replace("-", "")[:8]
     
     ics_content = f"""BEGIN:VCALENDAR
@@ -119,7 +119,7 @@ if __name__ == "__main__":
             tugas_id = tugas["id"]
             
             try:
-                sudah_terkirim = t_props.get("Send by email", {}).get("checkbox", False)
+                sudah_terkirim = t_props.get("info_email", {}).get("checkbox", False)
                 if sudah_terkirim:
                     continue  
                 
