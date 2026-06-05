@@ -11,4 +11,4 @@ while True:
     
     print("Tunggu satu hari sebelum pengecekan berikutnya...\n")
     
-    time.sleep(86400)
+    time.sleep(300)
