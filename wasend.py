@@ -98,11 +98,17 @@ if __name__ == "__main__":
         if not (new_notify or remind_notify or overdue_notify):
             continue
 
-        print(f"\nMemproses Tugas: {nama_tugas} | Mata kuliah: {matkul}")
+        mode = None
+        if overdue_notify:
+            mode = "overdue"
+        elif remind_notify:
+            mode = "remind"
+        elif new_notify:
+            mode = "new"
+
+        print(f"\nMemproses Tugas: {nama_tugas} | Mata kuliah: {matkul} | Notifikasi: {mode}" )
             
         sukses_wa = gagal_wa = jumlah_diproses = 0
-
-        reminder_send = None
 
         for mhs in data_mhs:
             m_props = mhs["properties"]
@@ -131,22 +137,22 @@ if __name__ == "__main__":
 
             berhasil = dikirim = False
 
-            if overdue_notify and not sudah_kumpul: 
-                pesan = f"🚨 Halo *{nama}*, kamu telah melewati batas waktu pengumpulan {nama_tugas} pada mata kuliah *{matkul}*, *nilaimu kosong*! 🚨"
-                berhasil = kirim_wa(nomor_wa, pesan)
-                dikirim = True
-                reminder_send = "overdue"
+            if mode == "overdue":
+                if not sudah_kumpul: 
+                    pesan = f"🚨 Halo *{nama}*, kamu telah melewati batas waktu pengumpulan {nama_tugas} pada mata kuliah *{matkul}*, *nilaimu kosong*! 🚨"
+                    berhasil = kirim_wa(nomor_wa, pesan)
+                    dikirim = True
 
-            elif remind_notify and not sudah_kumpul:
+            elif mode == "remind":
+                if not sudah_kumpul:
                     pesan = (
                         f"⚠️ Halo *{nama}*, kamu *belum mengumpulkan tugas {matkul}*!\n" 
                         f"Segera selesaikan tugasmu pada tautan berikut, dan *kumpulkan paling lambat besok*!\n"
                         f"🔗 Cek tugas: {url_tugas}")
                     berhasil = kirim_wa(nomor_wa, pesan)
                     dikirim = True
-                    reminder_send = "remind"
 
-            elif new_notify:
+            elif mode == "new":
                 pesan = (
                     f"Halo *{nama}*, kerjakan tugas baru yang telah diunggah di EduVent!\n\n"
                     f"📚 Mata Kuliah: {matkul}\n"
@@ -156,8 +162,6 @@ if __name__ == "__main__":
                 )
                 berhasil = kirim_wa(nomor_wa, pesan)
                 dikirim = True
-                reminder_send = "new"
-
 
             if dikirim:
                 jumlah_diproses += 1
@@ -169,26 +173,26 @@ if __name__ == "__main__":
         if jumlah_diproses > 0:
             print(f"📊 Laporan Tugas '{nama_tugas}': Diproses: {jumlah_diproses} | Sukses: {sukses_wa} | Gagal: {gagal_wa}")
 
-            if reminder_send == "overdue":
+            if mode == "overdue":
                 checked(tugas_id, "remind_overdue")
                 checked(tugas_id, "remind_due")
                 checked(tugas_id, "info_whatsapp")
                 print("✅ Peringatan tidak mengumpulkan tugas (Overdue) terkirim dan ditandai!")
                 
-            elif reminder_send == "remind":
+            elif mode == "remind":
                 checked(tugas_id, "remind_due")
                 checked(tugas_id, "info_whatsapp") 
                 print("✅ Peringatan pengumpulan tugas (H-1) terkirim dan ditandai!")
                 
-            elif reminder_send == "new":
+            elif mode == "new":
                 checked(tugas_id, "info_whatsapp")
                 print("✅ Berhasil mengirim pemberitahuan tugas terbaru dan ditandai!")
         else:
-            if overdue_notify:
+            if mode == "overdue":
                 checked(tugas_id, "remind_overdue")
-            elif remind_notify:
+            elif mode == "remind":
                 checked(tugas_id, "remind_due")
-            elif new_notify:
+            elif mode == "new":
                 checked(tugas_id, "info_whatsapp")
     print("\nCek mahasiswa yang sudah mengumpulkan tugas...")
     for kumpul in data_pengumpulan:
