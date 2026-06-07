@@ -139,7 +139,7 @@ if __name__ == "__main__":
 
             elif remind_notify and not sudah_kumpul:
                     pesan = (
-                        f"⚠️ Halo *{nama}*, kamu *belum mengumpulkan tugas {matkul}*! Segera selesaikan pada tautan berikut dan *kumpulkan paling lambat besok*!\n"
+                        f"⚠️ Halo *{nama}*, kamu *belum mengumpulkan tugas {matkul}*! Segera selesaikan pada tautan berikut dan *kumpulkan paling lambat besok*!\n\n"
                         f"🔗 Cek Tugas: {url_tugas}\n")
                     berhasil = kirim_wa(nomor_wa, pesan)
                     dikirim = True
@@ -173,16 +173,16 @@ if __name__ == "__main__":
                 checked(tugas_id, "remind_overdue")
                 checked(tugas_id, "remind_due")
                 checked(tugas_id, "info_whatsapp")
-                print("✅ Peringatan tidak mengumpulkan tugas (Overdue) terkirim dan dicentang!")
+                print("✅ Peringatan tidak mengumpulkan tugas (Overdue) terkirim dan ditandai!")
                 
             elif reminder_send == "remind":
                 checked(tugas_id, "remind_due")
                 checked(tugas_id, "info_whatsapp") 
-                print("✅ Peringatan pengumpulan tugas (H-1) terkirim dan dicentang!")
+                print("✅ Peringatan pengumpulan tugas (H-1) terkirim dan ditandai!")
                 
             elif reminder_send == "new":
                 checked(tugas_id, "info_whatsapp")
-                print("✅ Berhasil mengirim pemberitahuan tugas terbaru dan dicentang!")
+                print("✅ Berhasil mengirim pemberitahuan tugas terbaru dan ditandai!")
         else:
             if overdue_notify:
                 checked(tugas_id, "remind_overdue")
@@ -216,13 +216,13 @@ if __name__ == "__main__":
                 url_tugas = tugas_dict[t_id].get("url", "#").replace("www.notion.so", "app.notion.com/p")
 
                 pesan_myits = (
-                    f"Halo *{nama}*, tugas pada mata kuliah *{matkul}* yang kamu kerjakan sudah terdaftar dalam EduVent. "
-                    f"Segera *kumpulkan juga tugasnya di myITS Classroom*!\n\n"
+                    f"Halo *{nama}*, tugas pada mata kuliah *{matkul}* yang kamu kerjakan sudah terdaftar dalam EduVent.\n"
+                    f"Segera *kumpulkan* juga *tugas*nya ke *myITS Classroom*!\n"
                     f"🔗 Cek Tugas: {url_tugas}"
                 )
 
                 if kirim_wa(nomor_wa, pesan_myits):
                     checked(kumpul_id, "remind_myits")
-                    print(f"✅ Notif myITS terkirim ke {nama} (Matkul: {matkul}) dan DB Pengumpulan ditandai!")
+                    print(f"✅ Pemberitahuan pengumpulan myITS telah terkirim dan ditandai!")
             except Exception as e:
                 print(f"Gagal memproses notif myITS: {e}")
