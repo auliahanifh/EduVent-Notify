@@ -98,7 +98,7 @@ if __name__ == "__main__":
         if not (new_notify or remind_notify or overdue_notify):
             continue
 
-        print(f"\nMemproses Tugas: {nama_tugas} | Matkul: {matkul}")
+        print(f"\nMemproses Tugas: {nama_tugas} | Mata kuliah: {matkul}")
             
         sukses_wa = gagal_wa = jumlah_diproses = 0
 
@@ -217,7 +217,7 @@ if __name__ == "__main__":
 
                 pesan_myits = (
                     f"Halo *{nama}*, tugas pada mata kuliah *{matkul}* yang kamu kerjakan sudah terdaftar dalam EduVent.\n"
-                    f"Segera *kumpulkan* juga *tugas*nya ke *myITS Classroom*!\n"
+                    f"Segera *kumpulkan* juga *tugasnya ke myITS Classroom*!\n"
                     f"🔗 Cek Tugas: {url_tugas}"
                 )
 
