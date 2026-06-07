@@ -2,6 +2,7 @@ import os
 import requests
 import time
 from datetime import datetime
+from urllib.parse import quote
 
 NOTION_TOKEN = os.getenv("NOTION_TOKEN")
 DB_TUGAS = "31c87d969b0a80e09112dab127df9869"
@@ -25,7 +26,7 @@ def get_notion_data(db_id):
     res = requests.post(url, headers=NOTION_HEADERS)
     return res.json().get("results", [])
 
-def checked(page_id, nama_kolom):
+def tandai_status_notion(page_id, nama_kolom):
     url = f"https://api.notion.com/v1/pages/{page_id}"
     payload = {"properties": {nama_kolom: {"checkbox": True}}}
     res = requests.patch(url, json=payload, headers=NOTION_HEADERS)
@@ -39,6 +40,9 @@ def kirim_wa(nomor, pesan):
     res = requests.post(WA_URL, json=payload, headers=WA_HEADERS)
     time.sleep(2) 
     return res.status_code == 200
+
+def generate_cal_link(nama_tugas, matkul, submit, url_tugas):
+    return ""
 
 def hitung_semester_mahasiswa(entry_year):
     now = datetime.now()
@@ -60,15 +64,12 @@ def hitung_semester_mahasiswa(entry_year):
     return semester
 
 if __name__ == "__main__":
-    print("Memeriksa tugas dan pengumpulan yang akan dikirim...")
+    print("Memeriksa tugas yang akan dikirim...")
     data_mhs = get_notion_data(DB_STUDENT)
     data_tugas = get_notion_data(DB_TUGAS)
     data_pengumpulan = get_notion_data(DB_PENGUMPULAN) 
 
     today = datetime.now().date()
-
-    mhs_dict = {m["id"]: m for m in data_mhs}
-    tugas_dict = {t["id"]: t for t in data_tugas}
 
     for tugas in data_tugas:
         t_props = tugas["properties"]
@@ -83,12 +84,12 @@ if __name__ == "__main__":
 
             cb_info = t_props.get("info_whatsapp", {}).get("checkbox", False)
             cb_remind = t_props.get("remind_due", {}).get("checkbox", False)
-            cb_overdue = t_props.get("remind_overdue", {}).get("checkbox", False)
+            cb_overdue= t_props.get("remind_overdue", {}).get("checkbox", False)
             
             if not submit: continue
             submit_date = datetime.strptime(submit, "%Y-%m-%d").date()
             selisih_hari = (submit_date - today).days
-        except Exception:
+        except Exception as e:
             continue
 
         new_notify = not cb_info
@@ -100,7 +101,9 @@ if __name__ == "__main__":
 
         print(f"\nMemproses Tugas: {nama_tugas} | Matkul: {matkul}")
             
-        sukses_wa = gagal_wa = jumlah_diproses = 0
+        sukses_wa = 0
+        gagal_wa = 0
+        jumlah_diproses = 0
 
         reminder_send = None
 
@@ -115,8 +118,10 @@ if __name__ == "__main__":
                 entry_year = int(entry_year_str)
             except (KeyError, TypeError, ValueError):
                 continue
+
+            semester_mahasiswa = hitung_semester_mahasiswa(entry_year)
             
-            if smt_tugas != hitung_semester_mahasiswa(entry_year):
+            if smt_tugas != semester_mahasiswa:
                 continue
 
             sudah_kumpul = False
@@ -129,17 +134,27 @@ if __name__ == "__main__":
                         sudah_kumpul = True
                         break
 
-            berhasil = dikirim = False
+            berhasil = False
+            dikirim = False
+            pesan = ""
 
-            if overdue_notify and not sudah_kumpul: 
-                pesan = f"🚨 Halo *{nama}*, kamu telah melewati batas waktu pengumpulan {nama_tugas} pada mata kuliah *{matkul}*, *nilaimu kosong*! 🚨"
-                berhasil = kirim_wa(nomor_wa, pesan)
-                dikirim = True
-                reminder_send = "overdue"
+            if overdue_notify:
+                if not sudah_kumpul: 
+                    pesan = f"🚨 Halo *{nama}*, kamu telah melewati batas waktu pengumpulan {nama_tugas} pada mata kuliah *{matkul}*, *nilaimu kosong*! 🚨"
+                    berhasil = kirim_wa(nomor_wa, pesan)
+                    dikirim = True
+                    reminder_send = "overdue"
 
-            elif remind_notify and not sudah_kumpul:
+            elif remind_notify:
+                if sudah_kumpul:
                     pesan = (
-                        f"⚠️ Halo *{nama}*, kamu *belum mengumpulkan tugas {matkul}*! Segera selesaikan pada tautan berikut dan *kumpulkan paling lambat besok*!\n"
+                        f"Halo *{nama}*, tugas pada mata kuliah {matkul} yang kamu kerjakan sudah terdaftar dalam EduVent. Segara *kumpulkan juga tugasnya di myITS Classroom*!\n"
+                        f"🔗 Cek Tugas: {url_tugas}\n")
+                    berhasil = kirim_wa(nomor_wa, pesan)
+                    dikirim = True
+                else:
+                    pesan = (
+                        f"⚠️ Halo *{nama}*, kamu *belum mengumpulkan tugas* pada *mata kuliah {matkul}*! Segera selesaikan pada tautan berikut dan *kumpulkan paling lambat besok*!\n"
                         f"🔗 Cek Tugas: {url_tugas}\n")
                     berhasil = kirim_wa(nomor_wa, pesan)
                     dikirim = True
@@ -170,59 +185,23 @@ if __name__ == "__main__":
             print(f"📊 Laporan Tugas '{nama_tugas}': Diproses: {jumlah_diproses} | Sukses: {sukses_wa} | Gagal: {gagal_wa}")
 
             if reminder_send == "overdue":
-                checked(tugas_id, "remind_overdue")
-                checked(tugas_id, "remind_due")
-                checked(tugas_id, "info_whatsapp")
+                tandai_status_notion(tugas_id, "remind_overdue")
+                tandai_status_notion(tugas_id, "remind_due")
+                tandai_status_notion(tugas_id, "info_whatsapp")
                 print("✅ Peringatan tidak mengumpulkan tugas (Overdue) terkirim dan dicentang!")
                 
             elif reminder_send == "remind":
-                checked(tugas_id, "remind_due")
-                checked(tugas_id, "info_whatsapp") 
+                tandai_status_notion(tugas_id, "remind_due")
+                tandai_status_notion(tugas_id, "info_whatsapp") # Centang tugas baru juga agar tidak spam di putaran berikutnya
                 print("✅ Peringatan pengumpulan tugas (H-1) terkirim dan dicentang!")
                 
             elif reminder_send == "new":
-                checked(tugas_id, "info_whatsapp")
+                tandai_status_notion(tugas_id, "info_whatsapp")
                 print("✅ Berhasil mengirim pemberitahuan tugas terbaru dan dicentang!")
         else:
             if overdue_notify:
-                checked(tugas_id, "remind_overdue")
+                tandai_status_notion(tugas_id, "remind_overdue")
             elif remind_notify:
-                checked(tugas_id, "remind_due")
+                tandai_status_notion(tugas_id, "remind_due")
             elif new_notify:
-                checked(tugas_id, "info_whatsapp")
-    print("\nCek mahasiswa yang sudah mengumpulkan tugas...")
-    for kumpul in data_pengumpulan:
-        k_props = kumpul["properties"]
-        kumpul_id = kumpul["id"]
-
-        cb_myits = k_props.get("remind_myits", {}).get("checkbox", False)
-        if cb_myits:
-            continue
-
-        rel_student = k_props.get("Student", {}).get("relation", [])
-        rel_tugas = k_props.get("Tugas Quest", {}).get("relation", [])
-
-        if not rel_student or not rel_tugas:
-            continue
-
-        mhs_id = rel_student[0]["id"]
-        t_id = rel_tugas[0]["id"]
-
-        if mhs_id in mhs_dict and t_id in tugas_dict:
-            try:
-                nama = mhs_dict[mhs_id]["properties"]["Name"]["title"][0]["text"]["content"]
-                nomor_wa = mhs_dict[mhs_id]["properties"]["Phone"]["phone_number"]
-                matkul = tugas_dict[t_id]["properties"]["Matakuliah"]["select"]["name"]
-                url_tugas = tugas_dict[t_id].get("url", "#").replace("www.notion.so", "app.notion.com/p")
-
-                pesan_myits = (
-                    f"Halo *{nama}*, tugas pada mata kuliah *{matkul}* yang kamu kerjakan sudah terdaftar dalam EduVent. "
-                    f"Segera *kumpulkan juga tugasnya di myITS Classroom*!\n\n"
-                    f"🔗 Cek Tugas: {url_tugas}"
-                )
-
-                if kirim_wa(nomor_wa, pesan_myits):
-                    tandai_status_notion(kumpul_id, "remind_myits")
-                    print(f"✅ Notif myITS terkirim ke {nama} (Matkul: {matkul}) dan DB Pengumpulan ditandai!")
-            except Exception as e:
-                print(f"Gagal memproses notif myITS: {e}")
+                tandai_status_notion(tugas_id, "info_whatsapp")
