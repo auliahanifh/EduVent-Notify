@@ -184,18 +184,18 @@ if __name__ == "__main__":
         if jumlah_diproses > 0:
             print(f"📊 Laporan Tugas '{nama_tugas}': Diproses: {jumlah_diproses} | Sukses: {sukses_wa} | Gagal: {gagal_wa}")
 
-            if jenis_notif_dikirim == "overdue":
+            if reminder_send == "overdue":
                 tandai_status_notion(tugas_id, "remind_overdue")
                 tandai_status_notion(tugas_id, "remind_due")
                 tandai_status_notion(tugas_id, "info_whatsapp")
                 print("✅ Peringatan tidak mengumpulkan tugas (Overdue) terkirim dan dicentang!")
                 
-            elif jenis_notif_dikirim == "remind":
+            elif reminder_send == "remind":
                 tandai_status_notion(tugas_id, "remind_due")
                 tandai_status_notion(tugas_id, "info_whatsapp") # Centang tugas baru juga agar tidak spam di putaran berikutnya
                 print("✅ Peringatan pengumpulan tugas (H-1) terkirim dan dicentang!")
                 
-            elif jenis_notif_dikirim == "new":
+            elif reminder_send == "new":
                 tandai_status_notion(tugas_id, "info_whatsapp")
                 print("✅ Berhasil mengirim pemberitahuan tugas terbaru dan dicentang!")
         else:
