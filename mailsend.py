@@ -64,7 +64,6 @@ END:VEVENT
 END:VCALENDAR"""
 
     try:
-        # Ditambahkan timeout 15 detik untuk mencegah kode nyangkut (hang)
         with smtplib.SMTP_SSL('smtp.gmail.com', 465, timeout=15) as smtp:
             smtp.login(EMAIL, PASSWORD)
             
@@ -113,7 +112,6 @@ if __name__ == "__main__":
     elif not data_tugas:
         print("Tidak ada tugas sama sekali di dalam database.")
     else:
-        # FILTER: Pisahkan hanya tugas yang checkbox info_email-nya belum dicentang (False)
         tugas_belum_dikirim = []
         for t in data_tugas:
             sudah_terkirim = t["properties"].get("info_email", {}).get("checkbox", False)

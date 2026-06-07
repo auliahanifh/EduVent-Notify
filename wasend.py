@@ -49,8 +49,6 @@ def hitung_semester_mahasiswa(entry_year):
     current_year = now.year
     current_month = now.month
     
-    the_year = current_year - entry_year
-    
     if current_month <= 7:
         tahun_akademik = current_year - 1
     else:
@@ -107,6 +105,8 @@ if __name__ == "__main__":
         gagal_wa = 0
         jumlah_diproses = 0
 
+        reminder_send = None
+
         for mhs in data_mhs:
             m_props = mhs["properties"]
             mhs_id = mhs["id"]
@@ -136,21 +136,17 @@ if __name__ == "__main__":
 
             berhasil = False
             dikirim = False
+            pesan = ""
 
-            if new_notify:
-                cal_link = generate_cal_link(nama_tugas, matkul, submit, url_tugas)
-                pesan = (
-                    f"Halo *{nama}*, kerjakan tugas baru yang telah diunggah di EduVent!\n\n"
-                    f"📚 Mata Kuliah: {matkul}\n"
-                    f"📅 Deadline: {submit}\n"
-                    f"🔗 Tugas: {url_tugas}\n\n"
-                    f"Cek email untuk mengaktifkan reminder waktu pengumpulan tugas ke kalendermu!\n"
-                )
-                berhasil = kirim_wa(nomor_wa, pesan)
-                dikirim = True
+            if overdue_notify:
+                if not sudah_kumpul: 
+                    pesan = f"🚨 Halo *{nama}*, kamu telah melewati batas waktu pengumpulan {nama_tugas} pada mata kuliah *{matkul}*, *nilaimu kosong*! 🚨"
+                    berhasil = kirim_wa(nomor_wa, pesan)
+                    dikirim = True
+                    reminder_send = "overdue"
 
-            elif selisih_hari == 1:
-                if remind_notify:
+            elif remind_notify:
+                if sudah_kumpul:
                     pesan = (
                         f"Halo *{nama}*, tugas pada mata kuliah {matkul} yang kamu kerjakan sudah terdaftar dalam EduVent. Segara *kumpulkan juga tugasnya di myITS Classroom*!\n"
                         f"🔗 Cek Tugas: {url_tugas}\n")
@@ -162,11 +158,21 @@ if __name__ == "__main__":
                         f"🔗 Cek Tugas: {url_tugas}\n")
                     berhasil = kirim_wa(nomor_wa, pesan)
                     dikirim = True
+                    reminder_send = "remind"
 
-            elif selisih_hari == -1 and not overdue_notify:
-                pesan = f"🚨 Halo *{nama}*, kamu telah melewati batas waktu pengumpulan {nama_tugas} pada mata kuliah *{matkul}*, *nilaimu kosong*! 🚨"
+            elif new_notify:
+                cal_link = generate_cal_link(nama_tugas, matkul, submit, url_tugas)
+                pesan = (
+                    f"Halo *{nama}*, kerjakan tugas baru yang telah diunggah di EduVent!\n\n"
+                    f"📚 Mata Kuliah: {matkul}\n"
+                    f"📅 Deadline: {submit}\n"
+                    f"🔗 Tugas: {url_tugas}\n\n"
+                    f"Cek email untuk mengaktifkan reminder waktu pengumpulan tugas ke kalendermu!\n"
+                )
                 berhasil = kirim_wa(nomor_wa, pesan)
                 dikirim = True
+                reminder_send = "new"
+
 
             if dikirim:
                 jumlah_diproses += 1
@@ -178,12 +184,24 @@ if __name__ == "__main__":
         if jumlah_diproses > 0:
             print(f"📊 Laporan Tugas '{nama_tugas}': Diproses: {jumlah_diproses} | Sukses: {sukses_wa} | Gagal: {gagal_wa}")
 
-        if new_notify:
-            tandai_status_notion(tugas_id, "info_whatsapp")
-            print(f"Berhasil mengirim pemberitahuan tugas terbaru!")
-        if remind_notify:
-            tandai_status_notion(tugas_id, "remind_due")
-            print(f"Peringatan pengumpulan tugas terkirim!")
-        if overdue_notify:
-            tandai_status_notion(tugas_id, "remind_overdue")
-            print(f"Peringatan tidak mengumpulkan tugas terkirim!")
+            if jenis_notif_dikirim == "overdue":
+                tandai_status_notion(tugas_id, "remind_overdue")
+                tandai_status_notion(tugas_id, "remind_due")
+                tandai_status_notion(tugas_id, "info_whatsapp")
+                print("✅ Peringatan tidak mengumpulkan tugas (Overdue) terkirim dan dicentang!")
+                
+            elif jenis_notif_dikirim == "remind":
+                tandai_status_notion(tugas_id, "remind_due")
+                tandai_status_notion(tugas_id, "info_whatsapp") # Centang tugas baru juga agar tidak spam di putaran berikutnya
+                print("✅ Peringatan pengumpulan tugas (H-1) terkirim dan dicentang!")
+                
+            elif jenis_notif_dikirim == "new":
+                tandai_status_notion(tugas_id, "info_whatsapp")
+                print("✅ Berhasil mengirim pemberitahuan tugas terbaru dan dicentang!")
+        else:
+            if overdue_notify:
+                tandai_status_notion(tugas_id, "remind_overdue")
+            elif remind_notify:
+                tandai_status_notion(tugas_id, "remind_due")
+            elif new_notify:
+                tandai_status_notion(tugas_id, "info_whatsapp")
