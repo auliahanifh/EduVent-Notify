@@ -147,7 +147,6 @@ if __name__ == "__main__":
                     reminder_send = "remind"
 
             elif new_notify:
-                cal_link = generate_cal_link(nama_tugas, matkul, submit, url_tugas)
                 pesan = (
                     f"Halo *{nama}*, kerjakan tugas baru yang telah diunggah di EduVent!\n\n"
                     f"📚 Mata Kuliah: {matkul}\n"
