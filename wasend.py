@@ -98,7 +98,7 @@ if __name__ == "__main__":
         if not (new_notify or remind_notify or overdue_notify):
             continue
 
-        print(f"\nMemproses Tugas: {nama_tugas} | Matkul: {matkul}")
+        print(f"\nMemproses Tugas: {nama_tugas} | Mata kuliah: {matkul}")
             
         sukses_wa = gagal_wa = jumlah_diproses = 0
 
@@ -139,8 +139,9 @@ if __name__ == "__main__":
 
             elif remind_notify and not sudah_kumpul:
                     pesan = (
-                        f"⚠️ Halo *{nama}*, kamu *belum mengumpulkan tugas {matkul}*! Segera selesaikan pada tautan berikut dan *kumpulkan paling lambat besok*!\n\n"
-                        f"🔗 Cek Tugas: {url_tugas}\n")
+                        f"⚠️ Halo *{nama}*, kamu *belum mengumpulkan tugas {matkul}*!\n" 
+                        f"Segera selesaikan tugasmu pada tautan berikut, dan *kumpulkan paling lambat besok*!\n"
+                        f"🔗 Cek tugas: {url_tugas}")
                     berhasil = kirim_wa(nomor_wa, pesan)
                     dikirim = True
                     reminder_send = "remind"
@@ -152,7 +153,7 @@ if __name__ == "__main__":
                     f"📚 Mata Kuliah: {matkul}\n"
                     f"📅 Deadline: {submit}\n"
                     f"🔗 Tugas: {url_tugas}\n\n"
-                    f"Cek email untuk mengaktifkan reminder waktu pengumpulan tugas ke kalendermu!\n"
+                    f"Cek emailmu untuk mengaktifkan reminder waktu pengumpulan tugas ke kalendermu!"
                 )
                 berhasil = kirim_wa(nomor_wa, pesan)
                 dikirim = True
@@ -217,8 +218,8 @@ if __name__ == "__main__":
 
                 pesan_myits = (
                     f"Halo *{nama}*, tugas pada mata kuliah *{matkul}* yang kamu kerjakan sudah terdaftar dalam EduVent.\n"
-                    f"Segera *kumpulkan* juga *tugas*nya ke *myITS Classroom*!\n"
-                    f"🔗 Cek Tugas: {url_tugas}"
+                    f"Segera *kumpulkan* juga *tugasnya ke myITS Classroom*!\n"
+                    f"🔗 Cek tugas: {url_tugas}"
                 )
 
                 if kirim_wa(nomor_wa, pesan_myits):
