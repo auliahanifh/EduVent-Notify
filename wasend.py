@@ -119,7 +119,7 @@ if __name__ == "__main__":
                 nomor_wa = m_props["Phone"]["phone_number"]
                 entry_year_str = m_props["Entry Year"]["select"]["name"]
                 entry_year = int(entry_year_str)
-            except (KeyError, TypeError, ValueError):
+            except Exception:
                 continue
             
             if smt_tugas != hitung_semester_mahasiswa(entry_year):
@@ -139,7 +139,7 @@ if __name__ == "__main__":
 
             if mode == "overdue":
                 if not sudah_kumpul: 
-                    pesan = f"🚨 Halo *{nama}*, kamu telah melewati batas waktu pengumpulan {nama_tugas} pada mata kuliah *{matkul}*, *nilaimu kosong*! 🚨"
+                    pesan = f"🚨 Halo *{nama}*, kamu telah melewati batas waktu pengumpulan *tugas* {nama_tugas} pada mata kuliah *{matkul}*, *nilaimu kosong*! 🚨"
                     berhasil = kirim_wa(nomor_wa, pesan)
                     dikirim = True
 

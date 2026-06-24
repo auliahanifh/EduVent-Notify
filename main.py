@@ -6,8 +6,8 @@ print("Jalankan server EduVent...")
 while True:
     print("Periksa update terbaru...")
     
-    os.system("python mailsend.py")
-    os.system("python wasend.py")
+    os.system("python -u mailsend.py")
+    os.system("python -u wasend.py")
     
     print("Tunggu 5 menit sebelum pengecekan berikutnya...\n")
     
