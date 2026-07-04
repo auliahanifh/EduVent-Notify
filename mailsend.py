@@ -5,10 +5,10 @@ from email.message import EmailMessage
 from datetime import datetime
 
 NOTION_TOKEN = os.getenv("NOTION_TOKEN")
-DB_TUGAS = "31c87d969b0a80e09112dab127df9869"
-DB_STUDENT = "35787d969b0a801fbde8f08af80bb608"
+DB_TUGAS = "1df473eeecd24c5c9c4b8fa771bda3bc"
+DB_STUDENT = "a2bc13f4b8c74d938f98434a2a4d6faf"
 EMAIL = "namedauliah@gmail.com"
-PASSWORD = os.getenv("EMAIL_PASS")
+PASSWORD = os.getenv("APP_PASS")
 
 NOTION_HEADERS = {
     "Authorization": f"Bearer {NOTION_TOKEN}",
@@ -22,14 +22,23 @@ def get_notion_data(db_id):
     res = requests.post(url, headers=NOTION_HEADERS)
     return res.json().get("results", [])
 
+def get_nama_halaman(page_id):
+    url = f"https://api.notion.com/v1/pages/{page_id}"
+    res = requests.get(url, headers=NOTION_HEADERS) 
+    if res.status_code == 200:
+        data = res.json()
+        for key, val in data["properties"].items():
+            if val["type"] == "title" and len(val["title"]) > 0:
+                return val["title"][0]["text"]["content"]
+    return "Mata Kuliah Tidak Diketahui"
+
 def tandai_email_terkirim(page_id):
     """Tandai pemberitahuan tugas terkirim melalui email"""
     url = f"https://api.notion.com/v1/pages/{page_id}"
-    payload = {"properties": {"info_email": {"checkbox": True}}}
+    payload = {"properties": {"email": {"checkbox": True}}}
     requests.patch(url, json=payload, headers=NOTION_HEADERS)
 
 def hitung_semester_mahasiswa(entry_year):
-    """Menghitung semester berjalan mahasiswa berdasarkan tahun masuk"""
     now = datetime.now()
     current_year = now.year
     current_month = now.month
@@ -49,7 +58,7 @@ def hitung_semester_mahasiswa(entry_year):
     return semester
 
 def kirim_email_kalender(email_tujuan, nama, nama_tugas, matkul, submit_str, url_tugas):
-    """Mengirim email pemberitahuan tugas"""
+    """Mengirim notifikasi info tugas mata kuliah"""
     dt_start = submit_str.replace("-", "")[:8]
     
     ics_content = f"""BEGIN:VCALENDAR
@@ -108,13 +117,15 @@ if __name__ == "__main__":
     data_tugas = get_notion_data(DB_TUGAS)
 
     if not data_mhs:
-        print("Gagal mengambil data mahasiswa dari Notion.")
+        print("Gagal mengambil data mahasiswa")
     elif not data_tugas:
-        print("Tidak ada tugas sama sekali di dalam database.")
+        print("Tidak ada tugas sama sekali")
     else:
+        cache_matkul = {}
+
         tugas_belum_dikirim = []
         for t in data_tugas:
-            sudah_terkirim = t["properties"].get("info_email", {}).get("checkbox", False)
+            sudah_terkirim = t["properties"].get("email", {}).get("checkbox", False)
             if not sudah_terkirim:
                 tugas_belum_dikirim.append(t)
 
@@ -128,22 +139,34 @@ if __name__ == "__main__":
                 tugas_id = tugas["id"]
                 
                 try:
-                    nama_tugas = t_props["Quest"]["title"][0]["text"]["content"] if t_props.get("Quest", {}).get("title") else "Tanpa Nama"
-                    matkul = t_props["Matakuliah"]["select"]["name"] if t_props.get("Matakuliah", {}).get("select") else "Mata Kuliah Umum"
+                    nama_tugas = t_props["Name"]["title"][0]["text"]["content"] if t_props.get("Name", {}).get("title") else "Tanpa Nama"
+                    rel_matkul = t_props["Matakuliah"]["relation"]
+                    if rel_matkul:
+                        matkul_id = rel_matkul[0]["id"]
+                        if matkul_id not in cache_matkul:
+                            cache_matkul[matkul_id] = get_nama_halaman(matkul_id)
+                        matkul = cache_matkul[matkul_id]
+                    else:
+                        matkul = "Matakuliah Kosong"
                     submit_str = t_props["Submit"]["date"]["start"] if t_props.get("Submit", {}).get("date") else None
                     url_tugas = tugas.get("url", "#").replace("www.notion.so", "app.notion.com/p")
-                    semester_tugas = int(t_props["Semester"]["select"]["name"])
+                    rollup_sem = t_props["Sem"]["rollup"] 
+                    if rollup_sem["type"] == "array" and len(rollup_sem["array"]) > 0:
+                        semester_tugas = int(rollup_sem["array"][0].get("number", 0))
+                    elif rollup_sem["type"] == "number":
+                        semester_tugas = int(rollup_sem["number"])
+                    else:
+                        semester_tugas = 0
                     
                     if not submit_str:
                         print(f"Tugas '{nama_tugas}' tidak memiliki tanggal Submit, dilewati...")
                         continue
                         
-                except (KeyError, TypeError, ValueError) as e:
+                except Exception as e:
+                    print(f"Error parsing tugas email: {e}")
                     continue
 
-                jumlah_diproses = 0
-                sukses_email = 0
-                gagal_email = 0
+                jumlah_diproses = sukses_email = gagal_email = 0
 
                 for mhs in data_mhs:
                     m_props = mhs["properties"]
@@ -151,9 +174,14 @@ if __name__ == "__main__":
                     try:
                         nama = m_props["Name"]["title"][0]["text"]["content"]
                         email_tujuan = m_props["Email"]["email"]  
-                        entry_year_str = m_props["Entry Year"]["select"]["name"]
-                        entry_year = int(entry_year_str)
-                    except (KeyError, TypeError, ValueError):
+                        entry_year_formula = m_props["Entry Year"]["formula"]
+                        if entry_year_formula["type"] == "string":
+                            entry_year = int(entry_year_formula["string"])
+                        elif entry_year_formula["type"] == "number":
+                            entry_year = int(entry_year_formula["number"])
+                        else:
+                            continue
+                    except Exception:
                         continue
                     
                     semester_mahasiswa = hitung_semester_mahasiswa(entry_year)

@@ -1,0 +1,63 @@
+{
+// semester 1 
+    "Matematika":"e9b5cfd4589746a2bb438b78b9ea0bdc",
+    "Pemrograman Dasar":"bcac070673f848f6aeb06d8dde674c72",
+    "Kreasi Startup":"d0e34562b7b24126af6a1e7dabdf85cb",
+    "Design Thinking":"6afcc1b8d7f8449da977cfc30d6baba8",
+    "Ekonomi & Bisnis":"ffe26ba6c6b3496294b9598402d719e7",
+    "Pengantar TEIC":"d5feb0d9af154a01a2513ad7b5f6a7b7",
+//semester 2
+    "Statistika Bisnis":"62625c15cbfa46ed93ff9618eaeaa352",
+    "Sistem Basis Data":"11e050a18b6b4ba29ef98a8aa70a0f2b",
+    "Manajemen Proyek Agile":"a3c7c8d192084301a8cef44e1389b78d",
+    "Ide Capstone":"2fdc45c383b544548ce97895e67d05cc",
+    "Lean Startup":"04f6c2edadf042a69edc2b0d1cdc446f",
+    "Bercerita dalam Bisnis":"af75eaf7e8ba42afa1bd40935f936671",
+//semester 3
+    "Teknologi Big Data":"Teknologi-Big-Data-3a40e2dba23543a2a8c52a88cad69088",
+    "Pola Pikir Produk":"c4d415dfd69547d3b373527cde0aabca",
+    "Kepemimpinan & Tim":"ecdaed22705247abb0b2aea8e53b52a0",
+    "Model Bisnis":"109b45a7f86c4227923755d0277da291",
+    "Proposisi Nilai":"9c43e11eb94d460b8322c8d559c2e95d",
+    "Akuisisi Pelanggan":"ae771d491d474ef18c4c0a9d8950a5f9",
+//semester 4
+    "Rancang Bangun Perangkat Lunak":"922bc6780cc94fffac6c7c9aad2e2d14",
+    "MVP Capstone":"8b8698faad954d89940ee31aeaf264c9",
+    "Negosiasi":"60d53ace73eb4fd0b070e9fede2d7495",
+    "Startup Legal":"586eb46dddec457c8aee0b78c2d54edd",
+    "Analisis Finansial Startup":"342b9e7108d84b17828ec2f18e2de603",
+    "Pemasaran dan Penjualan Berbasis Data":"327138ec2ec743e8a4629092b1096975",
+//semester 5
+    "Teknologi Bergerak":"e92405b1a7f646618c9d9acc5c3637b9",
+    "Perdagangan Elektronik":"c700b56cecef438aa542fcf379431457",
+    "Strategi Digital":"678182ac36a045cfa8b6f514d338a7d8",
+    "Program CRM & Loyalitas":"3680898d07f14df3a2e7fb0add319171",
+    "Investasi & Modal Ventura":"8c48ea74902c434a9146d67abb598bd4",
+    "Intelijen Bisnis":"c65f052e421a458aa6ac18cae6dae35a",
+    "Pemasaran Digital":"75b86503c7b547f09b601dda65cdaab5",
+//semester 6
+    "Aplikasi Teknologi & Trans Digital":"0ede9827ce1d464ba12e377f9a81e970",
+    "Kewirausahaan & Inovasi Sosial":"219cd4351f1b4a488f1318fe31cf2114",
+    "Agama":"915630e32e7743c3ad3db65ad3c6fcd2",
+    "Kewarganegaraan":"f0ba1d2ca43c4c40b39a46c3c78fa975",
+//semester 7
+    "Bahasa Inggris":"4cc26d78ea344c31bba9985a59db5306",
+    "Bahasa Indonesia":"3659d9c56d9e4d4cb697827ba8c434b8",
+    "Perancangan Organisasi Kreatif":"afcbd56a56794ef29e5feb23a2a6fa81",
+    "Manajemen Strategis Teknologi & Inovasi":"f951a03d7faa4868ab48abd70479c179",
+    "Keamanan Informasi":"1cf8952e2688409abd96b6c89f7ca50b",
+    "Teknopreneur":"cf2fd30b56ec44d890f917ec53a1f0b9",
+    "Pancasila":"be6e9a8f40ee49ca93df6b3c8aeb6d16",
+//semester 8
+    "Tugas Akhir":"96768d1db6634128acc9d3d5fcaf289e",
+//pilihan
+    "Komputasi Awan":"ccdc50c6204a484894829538068f4e4b",
+    "Sprint":"54870a576db34072bb84448346b81d79",
+    "Desain Pengalaman Pengguna":"d2d9dc5f3fb942eab2d5deb8dea84b30",
+    "Manajemen Pertumbuhan Startup":"f6f98cef86994038b3454571a6cd3c96",
+    "Motivasi Startup":"12e8b902e1f74235b1a7d20c79bfc477",
+    "Manajemen Perubahan Organisasi":"90b72de376374430a4f5d1cb6201bb51",
+    "Strategi Rantai Nilai Global":"9bf8b3dd9fe343f99a9a75506cad56ea",
+    "Model Bisnis Baru":"8e2a588f6c214139a7dedad8fba9e691",
+    "Pasar Internet":"be97816637144993ba60eb1a44457f5e"
+}
