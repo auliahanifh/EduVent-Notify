@@ -139,7 +139,7 @@ if __name__ == "__main__":
                 tugas_id = tugas["id"]
                 
                 try:
-                    nama_tugas = t_props["Name"]["title"][0]["text"]["content"] if t_props.get("Name", {}).get("title") else "Tanpa Nama"
+                    nama_tugas = t_props["Nama"]["title"][0]["text"]["content"] if t_props.get("Nama", {}).get("title") else "Tanpa Nama"
                     rel_matkul = t_props["Matakuliah"]["relation"]
                     if rel_matkul:
                         matkul_id = rel_matkul[0]["id"]
@@ -172,7 +172,7 @@ if __name__ == "__main__":
                     m_props = mhs["properties"]
                     
                     try:
-                        nama = m_props["Name"]["title"][0]["text"]["content"]
+                        nama = m_props["Nama"]["title"][0]["text"]["content"]
                         email_tujuan = m_props["Email"]["email"]  
                         entry_year_formula = m_props["Entry Year"]["formula"]
                         if entry_year_formula["type"] == "string":

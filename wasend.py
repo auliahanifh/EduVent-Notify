@@ -91,6 +91,7 @@ if __name__ == "__main__":
     tugas_dict = {t["id"]: t for t in data_tugas}
 
     cache_matkul = {}
+    cache_pengumpulan = {}
 
     for tugas in data_tugas:
         t_props = tugas["properties"]
@@ -123,7 +124,7 @@ if __name__ == "__main__":
             if not submit: continue
             submit_date = datetime.strptime(submit, "%Y-%m-%d").date()
             selisih_hari = (submit_date - today).days
-        except Exceptionas as e:
+        except Exception as e:
             print(f"Melewati tugas karena error parsing: {e}")
             continue
 
@@ -146,7 +147,17 @@ if __name__ == "__main__":
         elif new_notify: mode = "new"
 
         print(f"\nMemproses Tugas: {nama_tugas} | Mata kuliah: {matkul} | Notifikasi: {mode}" )
+        
+        db_pengumpulan_id = db_pengumpulan.get(matkul)
+        if not db_pengumpulan_id:
+            print(f"⚠️ DATABASE PENGUMPULAN UNTUK '{matkul}' BELUM ADA DI CONFIG JSON!")
+            continue 
+
+        if db_pengumpulan_id not in cache_pengumpulan:
+            cache_pengumpulan[db_pengumpulan_id] = get_notion_data(db_pengumpulan_id)
             
+        data_pengumpulan = cache_pengumpulan[db_pengumpulan_id]
+
         sukses_wa = gagal_wa = jumlah_diproses = 0
 
         for mhs in data_mhs:
@@ -156,7 +167,7 @@ if __name__ == "__main__":
             try:
                 nama = m_props["Nama"]["title"][0]["text"]["content"]
                 nomor_wa = m_props["Phone"]["phone_number"]
-                clean_wa = raw_nomor_wa.replace("-", "").replace(" ", "")
+                clean_wa = nomor_wa.replace("-", "").replace(" ", "")
                 if clean_wa.startswith("0"):
                     nomor_wa = "62" + clean_wa[1:]
                 elif clean_wa.startswith("+62"):
@@ -250,49 +261,53 @@ if __name__ == "__main__":
             elif mode == "new":
                 checked(tugas_id, "1stwhatsapp")
     print("\nCek mahasiswa yang sudah mengumpulkan tugas...")
-    for kumpul in data_pengumpulan:
-        k_props = kumpul["properties"]
-        kumpul_id = kumpul["id"]
+    for db_id in db_pengumpulan.values():
+        if db_id not in cache_pengumpulan:
+            cache_pengumpulan[db_id] = get_notion_data(db_id)
 
-        cb_myits = k_props.get("remind_myits", {}).get("checkbox", False)
-        if cb_myits:
-            continue
+        for kumpul in cache_pengumpulan[db_id]:
+            k_props = kumpul["properties"]
+            kumpul_id = kumpul["id"]
 
-        rel_student = k_props.get("Student", {}).get("relation", [])
-        rel_tugas = k_props.get("Task Quest", {}).get("relation", [])
+            cb_myits = k_props.get("remind_myits", {}).get("checkbox", False)
+            if cb_myits:
+                continue
 
-        if not rel_student or not rel_tugas:
-            continue
+            rel_student = k_props.get("Student", {}).get("relation", [])
+            rel_tugas = k_props.get("Task Quest", {}).get("relation", [])
 
-        mhs_id = rel_student[0]["id"]
-        t_id = rel_tugas[0]["id"]
+            if not rel_student or not rel_tugas:
+                continue
 
-        if mhs_id in mhs_dict and t_id in tugas_dict:
-            try:
-                nama = mhs_dict[mhs_id]["properties"]["Nama"]["title"][0]["text"]["content"]
-                nomor_wa = mhs_dict[mhs_id]["properties"]["Phone"]["phone_number"]
-                clean_wa = raw_nomor_wa.replace("-", "").replace(" ", "")
-                if clean_wa.startswith("0"):
-                    nomor_wa = "62" + clean_wa[1:]
-                elif clean_wa.startswith("+62"):
-                    nomor_wa = clean_wa[1:]
-                else:
-                    nomor_wa = clean_wa
-                matkul = tugas_dict[t_id]["properties"]["Matakuliah"]["relation"]
-                if rel_matkul_kumpul:
-                    m_id = rel_matkul_kumpul[0]["id"]
-                    matkul = cache_matkul.get(m_id, get_nama_halaman(m_id)) 
-                else:
-                    matkul = "Matakuliah Kosong"
-                url_tugas = tugas_dict[t_id].get("url", "#")
-                pesan_myits = (
-                    f"Halo *{nama}*, tugas pada mata kuliah *{matkul}* yang kamu kerjakan sudah terdaftar dalam EduVent.\n"
-                    f"Segera *kumpulkan* juga *tugasmu ke myITS Classroom*!\n"
-                    f"🔗 Cek tugas: {url_tugas}"
-                )
+            mhs_id = rel_student[0]["id"]
+            t_id = rel_tugas[0]["id"]
 
-                if kirim_wa(nomor_wa, pesan_myits):
-                    checked(kumpul_id, "remind_myits")
-                    print(f"✅ Pemberitahuan pengumpulan myITS Classroom telah terkirim!")
-            except Exception as e:
-                print(f"Gagal memproses notif myITS: {e}")
+            if mhs_id in mhs_dict and t_id in tugas_dict:
+                try:
+                    nama = mhs_dict[mhs_id]["properties"]["Nama"]["title"][0]["text"]["content"]
+                    nomor_wa = mhs_dict[mhs_id]["properties"]["Phone"]["phone_number"]
+                    clean_wa = nomor_wa.replace("-", "").replace(" ", "")
+                    if clean_wa.startswith("0"):
+                        nomor_wa = "62" + clean_wa[1:]
+                    elif clean_wa.startswith("+62"):
+                        nomor_wa = clean_wa[1:]
+                    else:
+                        nomor_wa = clean_wa
+                    rel_matkul_kumpul = tugas_dict[t_id]["properties"]["Matakuliah"]["relation"]
+                    if rel_matkul_kumpul:
+                        m_id = rel_matkul_kumpul[0]["id"]
+                        matkul = cache_matkul.get(m_id, get_nama_halaman(m_id)) 
+                    else:
+                        matkul = "Matakuliah Kosong"
+                    url_tugas = tugas_dict[t_id].get("url", "#")
+                    pesan_myits = (
+                        f"Halo *{nama}*, tugas pada mata kuliah *{matkul}* yang kamu kerjakan sudah terdaftar dalam EduVent.\n"
+                        f"Segera *kumpulkan* juga *tugasmu ke myITS Classroom*!\n"
+                        f"🔗 Cek tugas: {url_tugas}"
+                    )
+
+                    if kirim_wa(nomor_wa, pesan_myits):
+                        checked(kumpul_id, "remind_myits")
+                        print(f"✅ Pemberitahuan pengumpulan myITS Classroom telah terkirim!")
+                except Exception as e:
+                    print(f"Gagal memproses notif myITS: {e}")
