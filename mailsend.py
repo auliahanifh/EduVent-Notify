@@ -5,8 +5,8 @@ from email.message import EmailMessage
 from datetime import datetime
 
 NOTION_TOKEN = os.getenv("NOTION_TOKEN")
-DB_TUGAS = "1df473eeecd24c5c9c4b8fa771bda3bc"
-DB_STUDENT = "a2bc13f4b8c74d938f98434a2a4d6faf"
+DB_TUGAS = "31c87d969b0a80e09112dab127df9869"
+DB_STUDENT = "35787d969b0a801fbde8f08af80bb608"
 EMAIL = "namedauliah@gmail.com"
 PASSWORD = os.getenv("APP_PASS")
 
@@ -130,7 +130,7 @@ if __name__ == "__main__":
                 tugas_belum_dikirim.append(t)
 
         if len(tugas_belum_dikirim) == 0:
-            print("✅ Semua tugas sudah dikirim melalui email")
+            print("✅ Semua notifikasi email tugas terbaru terkirim")
         else:
             print(f"Terdapat {len(tugas_belum_dikirim)} tugas baru yang perlu dikirim via email.")
             
@@ -139,7 +139,7 @@ if __name__ == "__main__":
                 tugas_id = tugas["id"]
                 
                 try:
-                    nama_tugas = t_props["Nama"]["title"][0]["text"]["content"] if t_props.get("Nama", {}).get("title") else "Tanpa Nama"
+                    nama_tugas = t_props["Name"]["title"][0]["text"]["content"] if t_props.get("Name", {}).get("title") else "Tugas tanpa nama"
                     rel_matkul = t_props["Matakuliah"]["relation"]
                     if rel_matkul:
                         matkul_id = rel_matkul[0]["id"]
@@ -149,17 +149,29 @@ if __name__ == "__main__":
                     else:
                         matkul = "Matakuliah Kosong"
                     submit_str = t_props["Submit"]["date"]["start"] if t_props.get("Submit", {}).get("date") else None
-                    url_tugas = tugas.get("url", "#").replace("www.notion.so", "app.notion.com/p")
+                    url_tugas = tugas.get("url", "#")
                     rollup_sem = t_props["Sem"]["rollup"] 
+                    semester_tugas = 0
                     if rollup_sem["type"] == "array" and len(rollup_sem["array"]) > 0:
-                        semester_tugas = int(rollup_sem["array"][0].get("number", 0))
+                        item_sem = rollup_sem["array"][0]
+                        if item_sem["type"] == "number":
+                            semester_tugas = int(item_sem["number"])
+                        elif item_sem["type"] == "select" and item_sem.get("select"):
+                            semester_tugas = int(item_sem["select"]["name"])
                     elif rollup_sem["type"] == "number":
                         semester_tugas = int(rollup_sem["number"])
-                    else:
-                        semester_tugas = 0
                     
                     if not submit_str:
                         print(f"Tugas '{nama_tugas}' tidak memiliki tanggal Submit, dilewati...")
+                        continue
+                    
+                    today = datetime.now().date()
+                    submit_date = datetime.strptime(submit_str, "%Y-%m-%d").date()
+                    selisih_hari = (submit_date - today).days
+
+                    if selisih_hari < -14:
+                        print(f"🔕 Tugas lama tidak diproses fitur notifikasi")
+                        tandai_email_terkirim(tugas_id) 
                         continue
                         
                 except Exception as e:
