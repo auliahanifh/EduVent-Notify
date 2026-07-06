@@ -216,7 +216,7 @@ if __name__ == "__main__":
 
             if mode == "overdue":
                 if not sudah_kumpul: 
-                    pesan = f"🚨 Halo *{nama}*, kamu telah melewati batas waktu pengumpulan *tugas* {nama_tugas} pada mata kuliah *{matkul}*, *nilaimu kosong*! 🚨"
+                    pesan = f"🚨 Halo *{nama}*, kamu *telah melewati* batas waktu *pengumpulan tugas* {nama_tugas} pada mata kuliah *{matkul}*, *nilaimu kosong*! 🚨"
                     berhasil = kirim_wa(nomor_wa, pesan)
                     dikirim = True
 
@@ -234,7 +234,7 @@ if __name__ == "__main__":
                     f"Halo *{nama}*, kerjakan tugas baru yang telah diunggah di EduVent!\n\n"
                     f"📚 Mata Kuliah: {matkul}\n"
                     f"📅 Deadline: {submit}\n"
-                    f"🔗 Tugas: {url_tugas}\n\n"
+                    f"🔗 Cek tugas: {url_tugas}\n\n"
                     f"Cek emailmu untuk mengaktifkan reminder waktu pengumpulan tugas ke kalendermu!"
                 )
                 berhasil = kirim_wa(nomor_wa, pesan)
@@ -310,7 +310,8 @@ if __name__ == "__main__":
                     pesan_myits = (
                         f"Halo *{nama}*, tugas pada mata kuliah *{matkul}* yang kamu kerjakan sudah terdaftar dalam EduVent.\n"
                         f"Segera *kumpulkan* juga *tugasmu ke myITS Classroom*!\n"
-                        f"🔗 Cek tugas: {url_tugas}"
+                        f"🔗 Cari tugasmu: {url_tugas}!\n"
+                        f"Lalu klik tulisan pada kolom asesmen untuk pengumpulan di myITS Classroom"
                     )
 
                     if kirim_wa(nomor_wa, pesan_myits):
