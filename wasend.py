@@ -173,7 +173,7 @@ if __name__ == "__main__":
         if overdue_notify:
             mode = "overdue"
         elif remind_notify:
-            mode = "remind"
+            mode = "due"
         elif new_notify:
             mode = "new"
 
@@ -220,7 +220,7 @@ if __name__ == "__main__":
                     berhasil = kirim_wa(nomor_wa, pesan)
                     dikirim = True
 
-            elif mode == "remind":
+            elif mode == "due":
                 if not sudah_kumpul:
                     pesan = (
                         f"⚠️ Halo *{nama}*, kamu *belum mengumpulkan tugas {matkul}*!\n" 
@@ -256,7 +256,7 @@ if __name__ == "__main__":
                 checked(tugas_id, "1stwhatsapp")
                 print("✅ Peringatan tidak mengumpulkan tugas terkirim!")
                 
-            elif mode == "remind":
+            elif mode == "due":
                 checked(tugas_id, "due")
                 checked(tugas_id, "1stwhatsapp") 
                 print("✅ Peringatan pengumpulan tugas terkirim!")
@@ -267,7 +267,7 @@ if __name__ == "__main__":
         else:
             if mode == "overdue":
                 checked(tugas_id, "overdue")
-            elif mode == "remind":
+            elif mode == "due":
                 checked(tugas_id, "due")
             elif mode == "new":
                 checked(tugas_id, "1stwhatsapp")
@@ -314,7 +314,7 @@ if __name__ == "__main__":
                     )
 
                     if kirim_wa(nomor_wa, pesan_myits):
-                        checked(kumpul_id, "remind_myits")
+                        checked(kumpul_id, "myits")
                         print(f"✅Notifikasi pengumpulan myITS terkirim!")
                 except Exception as e:
                     print(f"Gagal memproses notif myITS: {e}")
