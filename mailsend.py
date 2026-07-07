@@ -1,6 +1,7 @@
 import os
 import requests
 import base64
+import time
 import json
 from email.message import EmailMessage
 from datetime import datetime
@@ -48,7 +49,7 @@ def get_gmail_service():
     return build('gmail', 'v1', credentials=creds)
 
 def get_notion_data(db_id):
-    """Mengambil seluruh data dari database Notion."""
+    """Mengambil seluruh data database Notion."""
     url = f"https://api.notion.com/v1/databases/{db_id}/query"
     res = requests.post(url, headers=NOTION_HEADERS)
     return res.json().get("results", [])
@@ -64,7 +65,7 @@ def get_nama_halaman(page_id):
     return "Mata Kuliah Tidak Diketahui"
 
 def tandai_email_terkirim(page_id):
-    """Tandai pemberitahuan tugas terkirim melalui email"""
+    """Tandai pemberitahuan email tugas terkirim"""
     url = f"https://api.notion.com/v1/pages/{page_id}"
     payload = {"properties": {"email": {"checkbox": True}}}
     requests.patch(url, json=payload, headers=NOTION_HEADERS)
@@ -91,17 +92,30 @@ def hitung_semester_mahasiswa(entry_year):
 def kirim_email_kalender(service, email_tujuan, nama, nama_tugas, matkul, submit_str, url_tugas):
     """Mengirim notifikasi info tugas mata kuliah menggunakan Gmail API"""
     dt_start = submit_str.replace("-", "")[:8]
+
+    dt_stamp = datetime.utcnow().strftime('%Y%m%dT%H%M%SZ')
     
-    ics_content = f"""BEGIN:VCALENDAR
-VERSION:2.0
-CALSCALE:GREGORIAN
-BEGIN:VEVENT
-SUMMARY:[{matkul}] {nama_tugas}
-DTSTART;VALUE=DATE:{dt_start}
-DTEND;VALUE=DATE:{dt_start}
-DESCRIPTION:Kumpulkan tugas [{matkul}]! \\n\\n Cek tugas: {url_tugas}
-END:VEVENT
-END:VCALENDAR"""
+    matkul_bersih = matkul.replace(" ", "")
+    unique_id = f"tugas-{matkul_bersih}-{int(time.time())}@eduvent"
+    
+    ics_lines = [
+        "BEGIN:VCALENDAR",
+        "VERSION:2.0",
+        "PRODID:-//EduVent//Integrate Assignment//ID",
+        "CALSCALE:GREGORIAN",
+        "METHOD:PUBLISH",
+        "BEGIN:VEVENT",
+        f"UID:{unique_id}",
+        f"DTSTAMP:{dt_stamp}",
+        f"SUMMARY:[{matkul}] {nama_tugas}",
+        f"DTSTART;VALUE=DATE:{dt_start}",
+        f"DTEND;VALUE=DATE:{dt_start}",
+        f"DESCRIPTION:Kumpulkan tugas {matkul} ini: {url_tugas}",
+        "END:VEVENT",
+        "END:VCALENDAR"
+    ]
+    
+    ics_content = "\r\n".join(ics_lines)
 
     try:
         msg = EmailMessage()
@@ -148,7 +162,7 @@ if __name__ == "__main__":
     print("Menginisialisasi Gmail API...")
     gmail_service = get_gmail_service()
     
-    print("Memeriksa tugas yang akan dikirim Email...")
+    print("Memeriksa email tugas yang akan dikirim...")
     data_mhs = get_notion_data(DB_STUDENT)
     data_tugas = get_notion_data(DB_TUGAS)
 
@@ -166,7 +180,7 @@ if __name__ == "__main__":
                 tugas_belum_dikirim.append(t)
 
         if len(tugas_belum_dikirim) == 0:
-            print("✅ Semua notifikasi email tugas terbaru terkirim")
+            print("✅ Semua email tugas terbaru terkirim")
         else:
             print(f"Terdapat {len(tugas_belum_dikirim)} tugas baru yang perlu dikirim via email.")
             
@@ -246,6 +260,6 @@ if __name__ == "__main__":
                 
                 if jumlah_diproses > 0 or sukses_email > 0:
                     tandai_email_terkirim(tugas_id)
-                    print(f"✅ Tugas '{nama_tugas}' dikirim ke {jumlah_diproses} student (Sukses: {sukses_email}, Gagal: {gagal_email}) dan telah ditandai di Notion!")
+                    print(f"✅ Tugas '{nama_tugas}' dikirim ke {jumlah_diproses} student (Sukses: {sukses_email}, Gagal: {gagal_email})")
                 else:
                     print(f"⚠️ Tugas '{nama_tugas}' (Semester {semester_tugas}) tidak dikirim karena tidak ada mahasiswa dengan semester yang cocok.")
