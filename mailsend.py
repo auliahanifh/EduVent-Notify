@@ -127,8 +127,8 @@ END:VCALENDAR"""
 
         msg.add_attachment(
             ics_content.encode('utf-8'),
-            maintype='text',
-            subtype='calendar',
+            maintype='application',
+            subtype='octet-stream',
             filename='deadline.ics'
         )
         encoded_message = base64.urlsafe_b64encode(msg.as_bytes()).decode()
