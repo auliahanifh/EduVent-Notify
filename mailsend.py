@@ -15,14 +15,14 @@ from googleapiclient.errors import HttpError
 SCOPES = ['https://www.googleapis.com/auth/gmail.send']
 
 NOTION_TOKEN = os.getenv("NOTION_TOKEN")
-DB_TUGAS = "31c87d969b0a80e09112dab127df9869"
-DB_STUDENT = "35787d969b0a801fbde8f08af80bb608"
+DB_TUGAS = "1df473eeecd24c5c9c4b8fa771bda3bc"
+DB_STUDENT = "a2bc13f4b8c74d938f98434a2a4d6faf"
 EMAIL = "namedauliah@gmail.com"
 
 NOTION_HEADERS = {
     "Authorization": f"Bearer {NOTION_TOKEN}",
     "Content-Type": "application/json",
-    "Notion-Version": "2022-06-28" 
+    "Notion-Version": "2025-09-03" 
 }
 
 def get_gmail_service():
@@ -48,10 +48,30 @@ def get_gmail_service():
             
     return build('gmail', 'v1', credentials=creds)
 
+def format_id_notion(notion_id):
+    """Menyisipkan tanda strip (-) otomatis agar sesuai standar UUID Notion versi baru"""
+    notion_id = str(notion_id).strip()
+    if "-" not in notion_id and len(notion_id) == 32:
+        return f"{notion_id[:8]}-{notion_id[8:12]}-{notion_id[12:16]}-{notion_id[16:20]}-{notion_id[20:]}"
+    return notion_id
+
 def get_notion_data(db_id):
-    """Mengambil seluruh data database Notion."""
-    url = f"https://api.notion.com/v1/databases/{db_id}/query"
+    db_id_valid = format_id_notion(db_id)
+    db_url = f"https://api.notion.com/v1/databases/{db_id_valid}"
+    db_res = requests.get(db_url, headers=NOTION_HEADERS)
+    if db_res.status_code != 200:
+        print(f"❌ ERROR AMBIL DB {db_id_valid}: {db_res.text}")
+        return []
+        
+    data_sources = db_res.json().get("data_sources", [])
+    if not data_sources:
+        return []
+        
+    data_source_id = data_sources[0]["id"]
+    url = f"https://api.notion.com/v1/data_sources/{data_source_id}/query"
     res = requests.post(url, headers=NOTION_HEADERS)
+    if res.status_code != 200:
+        print(f"❌ ERROR NOTION API (DB {db_id_valid}): {res.text}")
     return res.json().get("results", [])
 
 def get_nama_halaman(page_id):
@@ -162,7 +182,7 @@ if __name__ == "__main__":
     print("Menginisialisasi Gmail API...")
     gmail_service = get_gmail_service()
     
-    print("Memeriksa email tugas yang akan dikirim...")
+    print("Memeriksa tugas yang akan dikirim ke email...")
     data_mhs = get_notion_data(DB_STUDENT)
     data_tugas = get_notion_data(DB_TUGAS)
 
@@ -180,7 +200,7 @@ if __name__ == "__main__":
                 tugas_belum_dikirim.append(t)
 
         if len(tugas_belum_dikirim) == 0:
-            print("✅ Semua email tugas terbaru terkirim")
+            print("✅ Semua tugas terbaru terkirim ke email")
         else:
             print(f"Terdapat {len(tugas_belum_dikirim)} tugas baru yang perlu dikirim via email.")
             
