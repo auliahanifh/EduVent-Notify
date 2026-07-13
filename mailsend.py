@@ -236,7 +236,7 @@ if __name__ == "__main__":
                         continue
                     
                     today = datetime.now().date()
-                    submit_date = datetime.strptime(submit_str, "%Y-%m-%d").date()
+                    submit_date = datetime.strptime(submit_str.split("T")[0], "%Y-%m-%d").date()
                     selisih_hari = (submit_date - today).days
 
                     if selisih_hari < -14:
@@ -277,7 +277,8 @@ if __name__ == "__main__":
                         sukses_email += 1
                     else:
                         gagal_email += 1
-                
+                    time.sleep(1)
+
                 if jumlah_diproses > 0 or sukses_email > 0:
                     tandai_email_terkirim(tugas_id)
                     print(f"✅ Tugas '{nama_tugas}' dikirim ke {jumlah_diproses} student (Sukses: {sukses_email}, Gagal: {gagal_email})")

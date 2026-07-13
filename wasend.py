@@ -2,6 +2,7 @@ import os
 import requests
 import time
 import json
+import random
 from datetime import datetime
 
 NOTION_TOKEN = os.getenv("NOTION_TOKEN")
@@ -75,13 +76,22 @@ def checked(page_id, nama_kolom):
         return []
     return res.json().get("results", [])
 
+pesan_terkirim = 0
 def kirim_wa(nomor, pesan):
+    global pesan_terkirim
     payload = {
         "target": nomor,
         "message": pesan
     }
     res = requests.post(WA_URL, json=payload, headers=WA_HEADERS)
-    time.sleep(2) 
+    pesan_terkirim += 1
+    if pesan_terkirim >= 30:
+        print("⏳ Mencapai batas 30 pesan, istirahat 60 detik untuk mencegah WhatsApp terblokir...")
+        time.sleep(60) 
+        pesan_terkirim = 0
+    else:
+        delay = random.triangular(2.0, 8.0, 5.0)
+        time.sleep(delay) 
     return res.status_code == 200
 
 def format_nomor_wa(nomor):
