@@ -1,10 +1,13 @@
 import os
+from dotenv import load_dotenv
+load_dotenv()
 import requests
 import base64
 import time
 import json
+import re
 from email.message import EmailMessage
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
@@ -16,7 +19,7 @@ SCOPES = ['https://www.googleapis.com/auth/gmail.send']
 
 NOTION_TOKEN = os.getenv("NOTION_TOKEN")
 DB_TUGAS = "1df473eeecd24c5c9c4b8fa771bda3bc"
-DB_STUDENT = "a2bc13f4b8c74d938f98434a2a4d6faf"
+DB_STUDENT = "39f333dd1d2880c0ba76eb07f93e0f1a"
 EMAIL = "namedauliah@gmail.com"
 
 NOTION_HEADERS = {
@@ -60,29 +63,57 @@ def get_notion_data(db_id):
     db_url = f"https://api.notion.com/v1/databases/{db_id_valid}"
     db_res = requests.get(db_url, headers=NOTION_HEADERS)
     if db_res.status_code != 200:
-        print(f"❌ ERROR AMBIL DB {db_id_valid}: {db_res.text}")
+        print(f"❌ ERROR INFO DB: {db_res.text}")
         return []
         
     data_sources = db_res.json().get("data_sources", [])
+    
     if not data_sources:
-        return []
+        url_query = f"https://api.notion.com/v1/databases/{db_id_valid}/query"
+    else:
+        data_source_id = data_sources[0]["id"]
+        url_query = f"https://api.notion.com/v1/data_sources/{data_source_id}/query"
+    results = []
+    has_more = True
+    next_cursor = None
+    
+    while has_more:
+        payload = {}
+        if next_cursor:
+            payload["start_cursor"] = next_cursor
+            
+        res = requests.post(url_query, headers=NOTION_HEADERS, json=payload)
+        if res.status_code != 200:
+            print(f"❌ ERROR QUERY DB: {res.text}")
+            break
+            
+        data = res.json()
+        results.extend(data.get("results", []))
+        has_more = data.get("has_more", False)
+        next_cursor = data.get("next_cursor", None)
         
-    data_source_id = data_sources[0]["id"]
-    url = f"https://api.notion.com/v1/data_sources/{data_source_id}/query"
-    res = requests.post(url, headers=NOTION_HEADERS)
-    if res.status_code != 200:
-        print(f"❌ ERROR NOTION API (DB {db_id_valid}): {res.text}")
-    return res.json().get("results", [])
+    return results
 
-def get_nama_halaman(page_id):
+def get_matkul_info(page_id):
     url = f"https://api.notion.com/v1/pages/{page_id}"
-    res = requests.get(url, headers=NOTION_HEADERS) 
+    res = requests.get(url, headers=NOTION_HEADERS)
+    nama_matkul = "Mata Kuliah Tidak Diketahui"
+    db_pengumpulan_id = None
+    
     if res.status_code == 200:
         data = res.json()
-        for key, val in data["properties"].items():
+        props = data.get("properties", {})
+        for key, val in props.items():
             if val["type"] == "title" and len(val["title"]) > 0:
-                return val["title"][0]["text"]["content"]
-    return "Mata Kuliah Tidak Diketahui"
+                nama_matkul = val["title"][0]["text"]["content"]
+                break
+        achievement_prop = props.get("Achievement", {})
+        if achievement_prop.get("type") == "url" and achievement_prop.get("url"):
+            url_str = achievement_prop.get("url")
+            match = re.search(r'([a-fA-F0-9]{32})', url_str.split('?')[0].replace("-", ""))
+            if match:
+                db_pengumpulan_id = match.group(1) 
+    return nama_matkul, db_pengumpulan_id
 
 def tandai_email_terkirim(page_id):
     """Tandai pemberitahuan email tugas terkirim"""
@@ -90,33 +121,39 @@ def tandai_email_terkirim(page_id):
     payload = {"properties": {"email": {"checkbox": True}}}
     requests.patch(url, json=payload, headers=NOTION_HEADERS)
 
-def hitung_semester_mahasiswa(entry_year):
-    now = datetime.now()
-    current_year = now.year
-    current_month = now.month
-    
-    if current_month <= 7:
-        tahun_akademik = current_year - 1
-    else:
-        tahun_akademik = current_year
-    
-    the_year = tahun_akademik - entry_year
-
-    if current_month >= 8 or current_month == 1:
-        semester = (the_year * 2) + 1
-    else:
-        semester = (the_year * 2) + 2
-        
-    return semester
-
-def kirim_email_kalender(service, email_tujuan, nama, nama_tugas, matkul, submit_str, url_tugas):
-    """Mengirim notifikasi info tugas mata kuliah menggunakan Gmail API"""
-    dt_start = submit_str.replace("-", "")[:8]
-
+def kirim_kalender_asesmen(service, email_tujuan, nama, nama_tugas, matkul, submit_str, url_tugas):
     dt_stamp = datetime.utcnow().strftime('%Y%m%dT%H%M%SZ')
-    
+
+    if "T" in submit_str:
+        dt_obj = datetime.fromisoformat(submit_str.replace('Z', '+00:00'))
+        dt_asesmen = dt_obj + timedelta(days=1)
+        dt_minus_1h = dt_asesmen - timedelta(hours=1)
+        
+        if dt_minus_1h.tzinfo:
+            dt_utc = dt_minus_1h.astimezone(timezone.utc)
+        else:
+            tz_jkt = timezone(timedelta(hours=7))
+            dt_utc = dt_minus_1h.replace(tzinfo=tz_jkt).astimezone(timezone.utc)
+            
+        dt_start_ics = dt_utc.strftime('%Y%m%dT%H%M%SZ')
+        format_ics_start = f"DTSTART:{dt_start_ics}"
+        format_ics_end = f"DTEND:{dt_start_ics}"
+        asesmen_display = dt_asesmen.strftime("%d/%m/%Y")
+        time_display = dt_asesmen.strftime("%H:%M WIB")
+    else:
+        dt_start_str = submit_str.replace("-", "")[:8]
+        dt_obj = datetime.strptime(dt_start_str, "%Y%m%d")
+        
+        dt_asesmen = dt_obj + timedelta(days=1)
+        dt_start_ics = dt_asesmen.strftime("%Y%m%d")
+        
+        format_ics_start = f"DTSTART;VALUE=DATE:{dt_start_ics}"
+        format_ics_end = f"DTEND;VALUE=DATE:{dt_start_ics}"
+        asesmen_display = dt_asesmen.strftime("%d/%m/%Y")
+        time_display = "Tidak ada jam spesifik"
+
     matkul_bersih = matkul.replace(" ", "")
-    unique_id = f"tugas-{matkul_bersih}-{int(time.time())}@eduvent"
+    unique_id = f"asesmen-{matkul_bersih}-{int(time.time())}@eduvent"
     
     ics_lines = [
         "BEGIN:VCALENDAR",
@@ -127,10 +164,10 @@ def kirim_email_kalender(service, email_tujuan, nama, nama_tugas, matkul, submit
         "BEGIN:VEVENT",
         f"UID:{unique_id}",
         f"DTSTAMP:{dt_stamp}",
-        f"SUMMARY:[{matkul}] {nama_tugas}",
-        f"DTSTART;VALUE=DATE:{dt_start}",
-        f"DTEND;VALUE=DATE:{dt_start}",
-        f"DESCRIPTION:Kumpulkan tugas {matkul} ini: {url_tugas}",
+        f"SUMMARY:[Asesmen {matkul}] {nama_tugas}",
+        format_ics_start,
+        format_ics_end,
+        f"DESCRIPTION:Asesmen tugas {matkul}: {url_tugas}",
         "END:VEVENT",
         "END:VCALENDAR"
     ]
@@ -139,19 +176,19 @@ def kirim_email_kalender(service, email_tujuan, nama, nama_tugas, matkul, submit
 
     try:
         msg = EmailMessage()
-        msg['Subject'] = f'Tugas Terbaru: {matkul} - {nama_tugas}'
+        msg['Subject'] = f'Asesmen: {matkul} - {nama_tugas}'
         msg['From'] = EMAIL
         msg['To'] = email_tujuan
         
         body_html = f"""
         <html>
         <body>
-            <p> Halo, {nama}!</p>
-            <p>Cek tugas terbaru dari mata kuliah <b>{matkul}</b> telah diunggah di EduVent!</p>
-            <p>🔗 <a href="{url_tugas}" target="_blank"><b>Buka tugasmu!</b></a></p>
-            <p>Batas Pengumpulan: <b>{submit_str}</b></p>
-            <p>📅 <b><i>Klik attachment file deadline.ics di bawah ini untuk menambahkan reminder waktu pengumpulan tugas {matkul} ke kalendermu!</i></b></p>
-            </p>
+            <p>Halo, <b>{nama}</b>!</p>
+            <p>Terima kasih sudah mengumpulkan tugas <b>{nama_tugas}</b> pada mata kuliah <b>{matkul}</b> di EduVent!</p>
+            <p>Tanggal <b>asesmen</b>: <b>{asesmen_display}</b></p>
+            <p>🔗 <a href="{url_tugas}" target="_blank"><b>Buka halaman tugas!</b></a></p>
+            <p>Jam: <b>{time_display}</b></p>
+            <p>📅 <b><i>Klik Add to Calendar pada Google Calendar atau klik lampiran file asesmen.ics di bawah ini untuk set reminder waktu asesmen ke kalendermu!</i></b></p>
         </body>
         </html>
         """
@@ -163,7 +200,7 @@ def kirim_email_kalender(service, email_tujuan, nama, nama_tugas, matkul, submit
             ics_content.encode('utf-8'),
             maintype='application',
             subtype='octet-stream',
-            filename='deadline.ics'
+            filename='asesmen.ics'
         )
         encoded_message = base64.urlsafe_b64encode(msg.as_bytes()).decode()
         create_message = {'raw': encoded_message}
@@ -179,108 +216,87 @@ def kirim_email_kalender(service, email_tujuan, nama, nama_tugas, matkul, submit
         return False
 
 if __name__ == "__main__":
-    print("Menginisialisasi Gmail API...")
+    print("🚀 MEMERIKSA EDUVENT UNTUK MENGIRIM EMAIL ASESMEN REMINDER")
+    
     gmail_service = get_gmail_service()
     
-    print("Memeriksa tugas yang akan dikirim ke email...")
     data_mhs = get_notion_data(DB_STUDENT)
     data_tugas = get_notion_data(DB_TUGAS)
 
-    if not data_mhs:
-        print("Gagal mengambil data mahasiswa")
-    elif not data_tugas:
-        print("Tidak ada tugas sama sekali")
-    else:
-        cache_matkul = {}
+    if not data_mhs or not data_tugas:
+        print("Gagal mengambil data mahasiswa atau tugas.")
+        exit()
+        
+    print(f"✅ Berhasil memuat {len(data_mhs)} Mahasiswa dan {len(data_tugas)} Tugas dari Notion.")
 
-        tugas_belum_dikirim = []
-        for t in data_tugas:
-            sudah_terkirim = t["properties"].get("email", {}).get("checkbox", False)
-            if not sudah_terkirim:
-                tugas_belum_dikirim.append(t)
+    cache_pengumpulan = {}
+    cache_matkul = {}
 
-        if len(tugas_belum_dikirim) == 0:
-            print("✅ Semua tugas terbaru terkirim ke email")
-        else:
-            print(f"Terdapat {len(tugas_belum_dikirim)} tugas baru yang perlu dikirim via email.")
-            
-            for tugas in tugas_belum_dikirim:
-                t_props = tugas["properties"]
-                tugas_id = tugas["id"]
-                
+    mhs_dict = {m["id"]: m for m in data_mhs}
+    tugas_dict = {t["id"]: t for t in data_tugas}
+
+    matkul_ids = set()
+    for t in data_tugas:
+        rel_m = t["properties"].get("Matakuliah", {}).get("relation", [])
+        if rel_m:
+            matkul_ids.add(rel_m[0]["id"])
+
+    for m_id in matkul_ids:
+        cache_matkul[m_id] = get_matkul_info(m_id)
+
+    print("\n🔍 Memulai pengecekan pengumpulan di NewSkill...")
+
+    for m_id, info in cache_matkul.items():
+        matkul_name, db_kumpul_id = info
+        if not db_kumpul_id: continue
+
+        if db_kumpul_id not in cache_pengumpulan:
+            cache_pengumpulan[db_kumpul_id] = get_notion_data(db_kumpul_id)
+        data_pengumpulan_matkul = cache_pengumpulan[db_kumpul_id]
+        
+        jumlah_sukses_email = 0
+        
+        for kumpul in data_pengumpulan_matkul:
+            k_props = kumpul["properties"]
+            kumpul_id = kumpul["id"]
+
+            sudah_email = k_props.get("email", {}).get("checkbox", False)
+            if sudah_email:
+                continue 
+
+            rel_student = k_props.get("Student", {}).get("relation", [])
+            rel_tugas = k_props.get("Task Quest", {}).get("relation", [])
+
+            if not rel_student or not rel_tugas:
+                continue
+
+            mhs_id = rel_student[0]["id"]
+            t_id = rel_tugas[0]["id"]
+
+            if mhs_id in mhs_dict and t_id in tugas_dict:
                 try:
-                    nama_tugas = t_props["Name"]["title"][0]["text"]["content"] if t_props.get("Name", {}).get("title") else "Tugas tanpa nama"
-                    rel_matkul = t_props["Matakuliah"]["relation"]
-                    if rel_matkul:
-                        matkul_id = rel_matkul[0]["id"]
-                        if matkul_id not in cache_matkul:
-                            cache_matkul[matkul_id] = get_nama_halaman(matkul_id)
-                        matkul = cache_matkul[matkul_id]
-                    else:
-                        matkul = "Matakuliah Kosong"
-                    submit_str = t_props["Submit"]["date"]["start"] if t_props.get("Submit", {}).get("date") else None
-                    url_tugas = tugas.get("url", "#")
-                    rollup_sem = t_props["Sem"]["rollup"] 
-                    semester_tugas = 0
-                    if rollup_sem["type"] == "array" and len(rollup_sem["array"]) > 0:
-                        item_sem = rollup_sem["array"][0]
-                        if item_sem["type"] == "number":
-                            semester_tugas = int(item_sem["number"])
-                        elif item_sem["type"] == "select" and item_sem.get("select"):
-                            semester_tugas = int(item_sem["select"]["name"])
-                    elif rollup_sem["type"] == "number":
-                        semester_tugas = int(rollup_sem["number"])
+                    nama = mhs_dict[mhs_id]["properties"]["Nama"]["title"][0]["text"]["content"]
+                    email_tujuan = mhs_dict[mhs_id]["properties"]["Email"]["email"]
+                    tugas_props = tugas_dict[t_id]["properties"]
+                    nama_tugas = tugas_props["Name"]["title"][0]["text"]["content"] if tugas_props.get("Name", {}).get("title") else "Tugas tanpa nama"
+                    url_tugas = tugas_dict[t_id].get("url", "#")
                     
-                    if not submit_str:
-                        print(f"Tugas '{nama_tugas}' tidak memiliki tanggal Submit, dilewati...")
-                        continue
-                    
-                    today = datetime.now().date()
-                    submit_date = datetime.strptime(submit_str.split("T")[0], "%Y-%m-%d").date()
-                    selisih_hari = (submit_date - today).days
+                    submit_str = tugas_props["Submit"]["date"]["start"] if tugas_props.get("Submit", {}).get("date") else None
+                    if not submit_str: continue 
 
-                    if selisih_hari < -14:
-                        print(f"🔕 Tugas lama tidak diproses fitur notifikasi")
-                        tandai_email_terkirim(tugas_id) 
-                        continue
-                        
-                except Exception as e:
-                    print(f"Error parsing tugas email: {e}")
-                    continue
-
-                jumlah_diproses = sukses_email = gagal_email = 0
-
-                for mhs in data_mhs:
-                    m_props = mhs["properties"]
-                    
-                    try:
-                        nama = m_props["Nama"]["title"][0]["text"]["content"]
-                        email_tujuan = m_props["Email"]["email"]  
-                        entry_year_formula = m_props["Entry Year"]["formula"]
-                        if entry_year_formula["type"] == "string":
-                            entry_year = int(entry_year_formula["string"])
-                        elif entry_year_formula["type"] == "number":
-                            entry_year = int(entry_year_formula["number"])
-                        else:
-                            continue
-                    except Exception:
-                        continue
-                    
-                    semester_mahasiswa = hitung_semester_mahasiswa(entry_year)
-                    if semester_tugas != semester_mahasiswa:
-                        continue
-                    
-                    berhasil = kirim_email_kalender(gmail_service, email_tujuan, nama, nama_tugas, matkul, submit_str, url_tugas)
-                    jumlah_diproses += 1
+                    berhasil = kirim_kalender_asesmen(gmail_service, email_tujuan, nama, nama_tugas, matkul_name, submit_str, url_tugas)
                     
                     if berhasil:
-                        sukses_email += 1
-                    else:
-                        gagal_email += 1
-                    time.sleep(1)
-
-                if jumlah_diproses > 0 or sukses_email > 0:
-                    tandai_email_terkirim(tugas_id)
-                    print(f"✅ Tugas '{nama_tugas}' dikirim ke {jumlah_diproses} student (Sukses: {sukses_email}, Gagal: {gagal_email})")
-                else:
-                    print(f"⚠️ Tugas '{nama_tugas}' (Semester {semester_tugas}) tidak dikirim karena tidak ada mahasiswa dengan semester yang cocok.")
+                        tandai_email_terkirim(kumpul_id) 
+                        jumlah_sukses_email += 1
+                    
+                    time.sleep(1) 
+                    
+                except Exception as e:
+                    print(f"Error memproses data email untuk {nama}: {e}")
+                    continue
+        
+        if jumlah_sukses_email > 0:
+            print(f"  ✅ Total {jumlah_sukses_email} Email Asesmen terkirim untuk mata kuliah {matkul_name}!")
+            
+    print("\n🎉 Proses sinkronisasi selesai.")
