@@ -277,7 +277,7 @@ if __name__ == "__main__":
             mode = "new"
 
         print(f"🎯 Kirim tugas: {mode.upper()}" )
-        if group_id and group_notify:
+        if group_id and grup_notify:
                 pesan_ortu = (
                 f"Bapak/Ibu, tugas *{nama_tugas}* untuk mata kuliah *{matkul}* telah dibuka!\n\n"
                 f"Mohon dukungan Bapak/Ibu sekalian, agar putra/putri dapat mengerjakan tugasnya dengan maksimal!\n"
