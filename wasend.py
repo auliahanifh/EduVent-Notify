@@ -253,8 +253,7 @@ if __name__ == "__main__":
                 if rel_t and rel_s and rel_t[0]["id"] == id_tugas_1:
                     mahasiswa_terdaftar.add(rel_s[0]["id"])
 
-        grup_new_notify = not cb_info
-        grup_remind_notify = (selisih_hari == 1) and not cb_remind
+        grup_notify = not cb_info
 
         if is_tugas_pertama:
             mhs_new_notify = not cb_info
@@ -265,21 +264,20 @@ if __name__ == "__main__":
             mhs_remind_notify = (selisih_hari == 1) and not cb_remind
             mhs_overdue_notify = (selisih_hari == -1) and not cb_overdue
             
-        if not (mhs_new_notify or mhs_remind_notify or mhs_overdue_notify or grup_new_notify or grup_remind_notify):
+        if not (mhs_new_notify or mhs_remind_notify or mhs_overdue_notify or grup_notify):
             print(f"⏩Belum waktunya dikirim")
             continue
 
         mode = None
         if mhs_overdue_notify:
             mode = "overdue"
-        elif mhs_remind_notify or grup_remind_notify:
+        elif mhs_remind_notify:
             mode = "due"
-        elif mhs_new_notify or grup_new_notify:
+        elif mhs_new_notify or grup_notify:
             mode = "new"
 
         print(f"🎯 Kirim tugas: {mode.upper()}" )
-        if group_id and mode in ["new", "due"]:
-            if (mode == "new" and grup_new_notify) or (mode == "due" and grup_remind_notify):
+        if group_id and group_notify:
                 pesan_ortu = (
                 f"Bapak/Ibu, tugas *{nama_tugas}* untuk mata kuliah *{matkul}* telah dibuka!\n\n"
                 f"Mohon dukungan Bapak/Ibu sekalian, agar putra/putri dapat mengerjakan tugasnya dengan maksimal!\n"
@@ -378,7 +376,8 @@ if __name__ == "__main__":
         if db_kumpul_id not in cache_pengumpulan:
             cache_pengumpulan[db_kumpul_id] = get_notion_data(db_kumpul_id)
         data_pengumpulan_matkul = cache_pengumpulan[db_kumpul_id]
-        
+
+        jumlah_sukses_myits = 0
         for kumpul in data_pengumpulan_matkul:
             k_props = kumpul["properties"]
             kumpul_id = kumpul["id"]
