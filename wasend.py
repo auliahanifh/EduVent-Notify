@@ -226,17 +226,17 @@ if __name__ == "__main__":
         
         is_tugas_pertama = (tugas_id == tugas_pertama.get(matkul_id, {}).get("id"))
         
-        print(f"🔍 Cek: [{matkul}] {nama_tugas} | Selisih: H{selisih_hari} | Tugas Ke-1: {is_tugas_pertama}")
+        print(f"🔍Cek: [{matkul}] {nama_tugas} | Selisih: H{selisih_hari} | Tugas Ke-1: {is_tugas_pertama}")
 
         if selisih_hari < -14:
-            print(f"   ⏩ Skip: Tugas lama, dan anggap selesai")
+            print(f"⏩ Skip: Tugas lama, dan anggap selesai")
             if not cb_overdue: checked(tugas_id, "overdue")
             if not cb_remind: checked(tugas_id, "due")
             if not cb_info: checked(tugas_id, "add")
             continue
 
         if not db_pengumpulan_id:
-            print(f"   ⚠️ Skip: Tidak ada link NewSkill di Matakuliah!")
+            print(f"⚠️ Skip: Tidak ada link NewSkill di Matakuliah!")
             continue
 
         if db_pengumpulan_id not in cache_pengumpulan:
@@ -311,34 +311,37 @@ if __name__ == "__main__":
                         sudah_kumpul = True
                         break
             berhasil = dikirim = False
-            
-            if mode == "overdue" and mhs_overdue_notify:
-                if not sudah_kumpul: 
-                    pesan = f"🚨 Halo *{nama}*, kamu *telah melewati* batas waktu *pengumpulan tugas* {nama_tugas} pada mata kuliah *{matkul}*, *nilaimu kosong*! 🚨"
-                    berhasil = kirim_wa(nomor_wa, pesan)
-                    dikirim = True
 
-            elif mode == "due" and mhs_remind_notify:
-                if not sudah_kumpul:
-                    pesan = (
-                        f"⚠️ Halo *{nama}*, kamu *belum mengumpulkan tugas {matkul}*!\n" 
-                        f"Segera selesaikan tugasmu pada tautan berikut, dan *kumpulkan paling lambat besok*!\n"
-                        f"{time_text}\n"
-                        f"🔗 Cek tugas: {url_tugas}")
-                    berhasil = kirim_wa(nomor_wa, pesan)
-                    dikirim = True
+            if is_tugas_pertama:
+                if (mode == "new" and mhs_new_notify) or (mode == "due" and mhs_remind_notify):
+                    if not sudah_kumpul:
+                        pesan = (
+                            f"📢 *PEMBERITAHUAN TUGAS PERTAMA*\n\n"
+                            f"Halo *{nama}*, tugas *{nama_tugas}* untuk mata kuliah *{matkul}* telah dibuka!\n"
+                            f"Kerjakan tugas ini agar kamu terdaftar pada mata kuliah!\n\n"
+                            f"📅 *Deadline*: *{submit_display}*\n"
+                            f"{time_text}"
+                            f"🔗 Link Tugas: {url_tugas}\n\n"
+                            f"⚠️ Abaikan pesan ini jika kamu tidak mengambil mata kuliah"
+                        )
+                        berhasil = kirim_wa(nomor_wa, pesan)
+                        dikirim = True
+            else:
+                if mode == "overdue" and mhs_overdue_notify:
+                    if not sudah_kumpul: 
+                        pesan = f"🚨 Halo *{nama}*, kamu *telah melewati* batas waktu *pengumpulan tugas* {nama_tugas} pada mata kuliah *{matkul}*, *nilaimu kosong*! 🚨"
+                        berhasil = kirim_wa(nomor_wa, pesan)
+                        dikirim = True
 
-            elif mode == "new" and mhs_new_notify:
-                pesan = (
-                    f"Halo *{nama}*, kerjakan tugas terbaru ini di EduVent!\n\n"
-                    f"📚 Mata Kuliah: {matkul}\n"
-                    f"📅 *Deadline*: *{submit_display}*\n"
-                    f"{time_text}"
-                    f"🔗 Cek tugas: {url_tugas}\n\n"
-                    f"Abaikan pesan jika kamu tidak mengambil mata kuliah ini"
-                )
-                berhasil = kirim_wa(nomor_wa, pesan)
-                dikirim = True
+                elif mode == "due" and mhs_remind_notify:
+                    if not sudah_kumpul:
+                        pesan = (
+                            f"⚠️ Halo *{nama}*, kamu *belum mengumpulkan tugas {matkul}*!\n" 
+                            f"Segera selesaikan tugasmu pada tautan berikut, dan *kumpulkan paling lambat besok*!\n"
+                            f"{time_text}\n"
+                            f"🔗 Cek tugas: {url_tugas}")
+                        berhasil = kirim_wa(nomor_wa, pesan)
+                        dikirim = True
 
             if dikirim:
                 jumlah_diproses += 1
